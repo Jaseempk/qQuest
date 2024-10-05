@@ -107,7 +107,7 @@ contract QQuestSavingPoolTest is Test {
         console.log("qQuestBalance:", address(qQuestPool).balance);
 
         vm.expectRevert(
-            QQuestSavingPool.Owo__SavingGoalAlreadyAchieved.selector
+            QQuestSavingPool.QQuest__SavingGoalAlreadyAchieved.selector
         );
         qQuestPool.addSavingsContribution{value: contributionTokenAmount}(
             savingsId
@@ -133,12 +133,13 @@ contract QQuestSavingPoolTest is Test {
         );
 
         vm.expectRevert(
-            QQuestSavingPool.Owo__SavingsPoolNotExpiredYet.selector
+            QQuestSavingPool.QQuest__SavingsPoolNotExpiredYet.selector
         );
         qQuestPool.withdraw(savingsId);
 
         uint256 poolOwnerContribution = qQuestPool.savingPoolBalance(
-            savingsId
+            savingsId,
+            user1
         ) * 1 ether;
 
         uint256 poolOwnerBalanceBefore = address(user1).balance;

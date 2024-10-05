@@ -7,15 +7,16 @@ import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/s
 
 contract QQuestSavingPool {
     //Error
-    error Owo__InvalidSavingsId();
-    error Owo__NothingToWihdraw();
-    error Owo__EthWithdrawalFailed();
-    error Owo__InvalidEthContribution();
-    error Owo__SavingPoolAlreadyActive();
-    error Owo__SavingsPoolNotExpiredYet();
-    error Owo__SavingGoalAlreadyAtained();
-    error Owo__SavingGoalAlreadyAchieved();
-    error Owo__SavingsPoolAlreadyClosedOrDoesntExist();
+    error QQuest__InvalidSavingsId();
+    error QQuest__NothingToWihdraw();
+    error QQuest__OnlyOwnerCanAccess();
+    error QQuest__EthWithdrawalFailed();
+    error QQuest__InvalidEthContribution();
+    error QQuest__SavingPoolAlreadyActive();
+    error QQuest__SavingsPoolNotExpiredYet();
+    error QQuest__SavingGoalAlreadyAtained();
+    error QQuest__SavingGoalAlreadyAchieved();
+    error QQuest__SavingsPoolAlreadyClosedOrDoesntExist();
 
     address public constant ETH_ADDRESS =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -26,10 +27,9 @@ contract QQuestSavingPool {
     uint128 public constant POOL_VALUE_PRECISION = 1e8;
     uint128 public constant PRICE_PRECISION = 1e5;
 
-    mapping(bytes32 => mapping(address => SavingDetails))
+    mapping(bytes32 => mapping(address => SavingPoolDetails))
         public idToSavingDetails;
-    mapping(bytes32 => uint256) public savingPoolBalance;
-    mapping(bytes32 => bool) public isActive;
+    mapping(bytes32 => mapping(address => uint256)) public savingPoolBalance;
 
     enum SavingInterval {
         Daily,
@@ -37,8 +37,10 @@ contract QQuestSavingPool {
         Monthly
     }
 
-    struct SavingDetails {
+    struct SavingPoolDetails {
+        bool isActive;
         bool isEth;
+        address poolOwner;
         uint256 goalForSaving;
         address tokenToBeSaved;
         SavingInterval intervalType;
@@ -61,6 +63,13 @@ contract QQuestSavingPool {
         bytes32 savingsId
     );
 
+    event SavingPoolWithdrawn(
+        address poolOwner,
+        bytes32 savingsId,
+        address savingToken,
+        uint256 balanceWithdrawn
+    );
+
     function initialiseAGoal(
         uint256 goalForSaving,
         address tokenToBeSaved,
@@ -78,7 +87,8 @@ contract QQuestSavingPool {
             )
         );
         uint256 expectedExpiry;
-        if (isActive[savingsId] == true) revert Owo__SavingPoolAlreadyActive();
+        if (idToSavingDetails[savingsId][msg.sender].isActive == true)
+            revert QQuest__SavingPoolAlreadyActive();
         if (intervalType == SavingInterval.Daily) {
             expectedExpiry =
                 block.timestamp +
@@ -92,8 +102,10 @@ contract QQuestSavingPool {
         uint256 tokenContributionValue = (goalForSaving *
             CONTRIBUTION_VALUE_PRECISION) / totalPaymentCounts;
 
-        idToSavingDetails[savingsId][msg.sender] = SavingDetails(
+        idToSavingDetails[savingsId][msg.sender] = SavingPoolDetails(
+            true,
             isEth,
+            msg.sender,
             goalForSaving,
             tokenToBeSaved,
             intervalType,
@@ -102,7 +114,7 @@ contract QQuestSavingPool {
             tokenContributionValue,
             savingTokenPriceFeedAddress
         );
-        isActive[savingsId] = true;
+
         emit GoalInitialised(
             isEth,
             msg.sender,
@@ -113,14 +125,18 @@ contract QQuestSavingPool {
     }
 
     function addSavingsContribution(bytes32 savingsId) public payable {
-        if (isActive[savingsId] == false) revert Owo__InvalidSavingsId();
+        address savingsPoolOwner = idToSavingDetails[savingsId][msg.sender]
+            .poolOwner;
+        if (msg.sender != savingsPoolOwner) revert QQuest__OnlyOwnerCanAccess();
+        if (idToSavingDetails[savingsId][msg.sender].isActive == false)
+            revert QQuest__InvalidSavingsId();
 
         uint256 currentSavingPoolValue = calculateSavingTokenValue(savingsId);
 
         if (
             (currentSavingPoolValue / POOL_VALUE_PRECISION) >=
             idToSavingDetails[savingsId][msg.sender].goalForSaving
-        ) revert Owo__SavingGoalAlreadyAchieved();
+        ) revert QQuest__SavingGoalAlreadyAchieved();
 
         address tokenToBeSaved = idToSavingDetails[savingsId][msg.sender]
             .tokenToBeSaved;
@@ -130,11 +146,11 @@ contract QQuestSavingPool {
         );
 
         emit ContributionMade(msg.sender, amountToContribute, savingsId);
-        savingPoolBalance[savingsId] += amountToContribute;
+        savingPoolBalance[savingsId][msg.sender] += amountToContribute;
         bool isEth = idToSavingDetails[savingsId][msg.sender].isEth;
         if (isEth) {
             if (msg.value != (amountToContribute * 1 ether))
-                revert Owo__InvalidEthContribution();
+                revert QQuest__InvalidEthContribution();
         } else {
             IERC20(tokenToBeSaved).transferFrom(
                 msg.sender,
@@ -145,28 +161,35 @@ contract QQuestSavingPool {
     }
 
     function withdraw(bytes32 savingsId) public {
-        if (savingPoolBalance[savingsId] == 0) revert Owo__NothingToWihdraw();
+        if (savingPoolBalance[savingsId][msg.sender] == 0)
+            revert QQuest__NothingToWihdraw();
         if (
             idToSavingDetails[savingsId][msg.sender].expiryTimeStamp >
             block.timestamp
-        ) revert Owo__SavingsPoolNotExpiredYet(); //checks whether the saving's goal time have already passed
+        ) revert QQuest__SavingsPoolNotExpiredYet(); //checks whether the saving's goal time have already passed
 
-        if (isActive[savingsId] == false)
-            revert Owo__SavingsPoolAlreadyClosedOrDoesntExist();
+        if (idToSavingDetails[savingsId][msg.sender].isActive == false)
+            revert QQuest__SavingsPoolAlreadyClosedOrDoesntExist();
 
         bool isEth = idToSavingDetails[savingsId][msg.sender].isEth;
 
-        uint256 balanceToWithdraw = savingPoolBalance[savingsId];
+        uint256 balanceToWithdraw = savingPoolBalance[savingsId][msg.sender];
 
         address tokenSaved = idToSavingDetails[savingsId][msg.sender]
             .tokenToBeSaved;
-        isActive[savingsId] = false;
-        savingPoolBalance[savingsId] = 0;
+        idToSavingDetails[savingsId][msg.sender].isActive = false;
+        savingPoolBalance[savingsId][msg.sender] = 0;
+        emit SavingPoolWithdrawn(
+            msg.sender,
+            savingsId,
+            tokenSaved,
+            balanceToWithdraw
+        );
         if (isEth) {
             (bool success, ) = payable(msg.sender).call{
                 value: balanceToWithdraw * 1 ether
             }("");
-            if (!success) revert Owo__EthWithdrawalFailed();
+            if (!success) revert QQuest__EthWithdrawalFailed();
         } else {
             IERC20(tokenSaved).transferFrom(
                 address(this),
@@ -186,7 +209,9 @@ contract QQuestSavingPool {
             savingTokenPriceFeedAddress
         ).latestRoundData();
 
-        uint256 currentSavingPoolQuantity = savingPoolBalance[savingsId];
+        uint256 currentSavingPoolQuantity = savingPoolBalance[savingsId][
+            msg.sender
+        ];
 
         currentSavingPoolValue =
             uint256(currentSavingTokenPrice) *
