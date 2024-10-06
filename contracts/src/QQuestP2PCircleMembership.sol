@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.24;
 
-import {ERC721} from "lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {EIP712} from "lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
+import {ERC1155} from "lib/openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
 import {SignatureChecker} from "lib/openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
 import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 
-contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
+contract QQuestP2PCircleMembership is ERC1155, EIP712, AccessControl {
     using SignatureChecker for address;
 
     //Error
@@ -23,8 +23,7 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     uint256 public constant ALLY_TOKEN_ID = 65108108121;
     uint256 public constant CONFIDANT_TOKEN_ID = 6711111010210510097110116;
     uint256 public constant GUARDIAN_TOKEN_ID = 711179711410010597110;
-    bytes32 public constant MINT_REQUEST_TYPE_HASH =
-        keccak256("MintRequest(address userAddress,uint256 newTokenId)");
+    bytes32 public constant MINT_REQUEST_TYPE_HASH = keccak256("MintRequest(address userAddress,uint256 newTokenId)");
 
     bytes32 public constant TRUSTED_ENTITY = keccak256("TRUSTED_ENTITY");
 
@@ -49,44 +48,38 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     event UserTierUpgraded(address user, uint256 tokenId);
     event UserAccoutCreated(address user, uint256 tokenId);
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        address _trustedEntity
-    ) ERC721(name, symbol) EIP712(name, VERSION) {
+    constructor(string memory name, string memory uri, address _trustedEntity) ERC1155(uri) EIP712(name, VERSION) {
         trustedEntity = _trustedEntity;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(TRUSTED_ENTITY, _trustedEntity);
     }
 
-    function createUserAccount(
-        uint256 builderScore,
-        bytes memory signature
-    ) public {
-        if (builderScore < MIN_BUILDER_SCORE)
+    function createUserAccount(uint256 builderScore, bytes memory signature) public {
+        if (builderScore < MIN_BUILDER_SCORE) {
             revert QQuest__NeedMinimumBuilderScore();
+        }
 
         bytes32 digest = mintRequestHelper(msg.sender, ALLY_TOKEN_ID);
 
         userToTierId[msg.sender][ALLY_TOKEN_ID] = TierLevels.Ally;
-        if (!trustedEntity.isValidSignatureNow(digest, signature))
+        if (!trustedEntity.isValidSignatureNow(digest, signature)) {
             revert QQuest__InvalidSignature();
+        }
 
-        _mint(msg.sender, ALLY_TOKEN_ID);
+        _mint(msg.sender, ALLY_TOKEN_ID, 1, "");
     }
 
-    function updateTierAndMintSoulBound(
-        uint256 newTokenId,
-        bytes memory signature
-    ) public {
-        if (newTokenId != CONFIDANT_TOKEN_ID && newTokenId != GUARDIAN_TOKEN_ID)
+    function updateTierAndMintSoulBound(uint256 newTokenId, bytes memory signature) public {
+        if (newTokenId != CONFIDANT_TOKEN_ID && newTokenId != GUARDIAN_TOKEN_ID) {
             revert QQuest__InvalidTokenId();
+        }
         bytes32 digest = mintRequestHelper(msg.sender, newTokenId);
-        if (!trustedEntity.isValidSignatureNow(digest, signature))
+        if (!trustedEntity.isValidSignatureNow(digest, signature)) {
             revert QQuest__InvalidSignature();
+        }
 
         emit UserTierUpgraded(msg.sender, newTokenId);
-        _mint(msg.sender, newTokenId);
+        _mint(msg.sender, newTokenId, 1, "");
     }
 
     function updateReputationScore() public {}
@@ -94,76 +87,37 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     /// @notice Helper function to generate the EIP-712 typed data hash for a mint request
     /// @param _toAddress The address to mint the NFT to
     /// @return The EIP-712 typed data hash for the mint request
-    function mintRequestHelper(
-        address _toAddress,
-        uint256 newTokenId
-    ) public view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(MINT_REQUEST_TYPE_HASH, _toAddress, newTokenId)
-                )
-            );
+    function mintRequestHelper(address _toAddress, uint256 newTokenId) public view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(MINT_REQUEST_TYPE_HASH, _toAddress, newTokenId)));
     }
 
-    /// @notice Reverts when attempting a safe transfer from operation
-    /// @dev This function is overridden to prevent transfers of soulbound NFTs
-    function safeTransferFrom(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public virtual override(ERC721) {
+    function safeTransferFrom(address, address, uint256, uint256, bytes memory) public virtual override {
         revert QQuest__NonSoulBoundOpNotAllowed();
     }
 
-    /// @notice Reverts when attempting a transfer from operation
-    /// @dev This function is overridden to prevent transfers of soulbound NFTs
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) public virtual override(ERC721) {
+    function safeBatchTransferFrom(address, address, uint256[] memory, uint256[] memory, bytes memory)
+        public
+        virtual
+        override
+    {
         revert QQuest__NonSoulBoundOpNotAllowed();
     }
 
-    /// @notice Reverts when attempting to check if an address is approved for all
-    /// @dev This function is overridden to prevent approval operations on soulbound NFTs
-    function isApprovedForAll(
-        address,
-        address
-    ) public pure override(ERC721) returns (bool) {
+    function setApprovalForAll(address, bool) public virtual override {
         revert QQuest__NonSoulBoundOpNotAllowed();
     }
 
-    /// @notice Reverts when attempting to set approval for all
-    /// @dev This function is overridden to prevent approval operations on soulbound NFTs
-    function setApprovalForAll(address, bool) public pure override(ERC721) {
-        revert QQuest__NonSoulBoundOpNotAllowed();
-    }
-
-    /// @notice Reverts when attempting to get the approved address for a token ID
-    /// @dev This function is overridden to prevent approval operations on soulbound NFTs
-    function getApproved(
-        uint256
-    ) public pure override(ERC721) returns (address) {
-        revert QQuest__NonSoulBoundOpNotAllowed();
-    }
-
-    /// @notice Reverts when attempting to approve an address for a token ID
-    /// @dev This function is overridden to prevent approval operations on soulbound NFTs
-    function approve(address, uint256) public pure override(ERC721) {
-        revert QQuest__NonSoulBoundOpNotAllowed();
+    function isApprovedForAll(address, address) public view virtual override returns (bool) {
+        return false;
     }
 
     /// @notice Grants the TRUSTED_ENTITY role to a new address
     /// @param _newEntity The address to grant the TRUSTED_ENTITY role to
     /// @dev Only the contract admin (DEFAULT_ADMIN_ROLE) can call this function
-    function updateTrustedIdentityRole(
-        address _newEntity
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_newEntity == address(0))
+    function updateTrustedIdentityRole(address _newEntity) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_newEntity == address(0)) {
             revert QQuest__CantHaveNullTrustedEntity();
+        }
         trustedEntity = _newEntity;
         _grantRole(TRUSTED_ENTITY, _newEntity);
     }
@@ -171,9 +125,7 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     /// @notice Revokes the TRUSTED_ENTITY role from an address
     /// @param newEntity The address to revoke the TRUSTED_ENTITY role from
     /// @dev Only the contract admin (DEFAULT_ADMIN_ROLE) can call this function
-    function revokeTrustedEntityRole(
-        address newEntity
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function revokeTrustedEntityRole(address newEntity) public onlyRole(DEFAULT_ADMIN_ROLE) {
         if (newEntity == address(0)) revert QQuest__CantHaveNullTrustedEntity();
 
         trustedEntity = address(0);
@@ -183,9 +135,7 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     /// @notice Returns whether the contract supports a given interface ID
     /// @param interfaceId The interface ID to check for support
     /// @return A boolean indicating whether the interface is supported
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
