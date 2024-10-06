@@ -1,6 +1,6 @@
 //SPDX-License-Identifier:MIT
 
-pragma solidity 0.2.24;
+pragma solidity 0.8.24;
 
 import {ERC721} from "lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {EIP712} from "lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
@@ -11,12 +11,18 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     using SignatureChecker for address;
 
     //Error
+    error QQuest__InvalidTokenId();
     error QQuest__InvalidSignature();
+    error QQuest__NeedMinimumBuilderScore();
     error QQuest__NonSoulBoundOpNotAllowed();
     error QQuest__CantHaveNullTrustedEntity();
 
-    uint256 private counter;
+    address private trustedEntity;
     string constant VERSION = "1.1";
+    uint8 public constant MIN_BUILDER_SCORE = 25;
+    uint256 public constant ALLY_TOKEN_ID = 65108108121;
+    uint256 public constant CONFIDANT_TOKEN_ID = 6711111010210510097110116;
+    uint256 public constant GUARDIAN_TOKEN_ID = 711179711410010597110;
     bytes32 public constant MINT_REQUEST_TYPE_HASH =
         keccak256("MintRequest(address userAddress,uint256 newTokenId)");
 
@@ -25,9 +31,9 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     mapping(address => mapping(uint256 => TierLevels)) public userToTierId;
 
     enum TierLevels {
-        Entry,
-        Mid,
-        Top
+        Ally,
+        Confidant,
+        Guardian
     }
 
     struct MintRequest {
@@ -41,33 +47,46 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
     }
 
     event UserTierUpgraded(address user, uint256 tokenId);
+    event UserAccoutCreated(address user, uint256 tokenId);
 
     constructor(
-        string name,
-        string symbol,
-        address trustedEntity
+        string memory name,
+        string memory symbol,
+        address _trustedEntity
     ) ERC721(name, symbol) EIP712(name, VERSION) {
+        trustedEntity = _trustedEntity;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(TRUSTED_ENTITY, trustedEntity);
+        _grantRole(TRUSTED_ENTITY, _trustedEntity);
     }
 
-    function createUserAccount(uint256 builderScore) public {
-        counter++;
-        userToTierId[msg.sender][counter] = TierLevels.Entry;
+    function createUserAccount(
+        uint256 builderScore,
+        bytes memory signature
+    ) public {
+        if (builderScore < MIN_BUILDER_SCORE)
+            revert QQuest__NeedMinimumBuilderScore();
 
-        _mint(msg.sender, counter);
+        bytes32 digest = mintRequestHelper(msg.sender, ALLY_TOKEN_ID);
+
+        userToTierId[msg.sender][ALLY_TOKEN_ID] = TierLevels.Ally;
+        if (!trustedEntity.isValidSignatureNow(digest, signature))
+            revert QQuest__InvalidSignature();
+
+        _mint(msg.sender, ALLY_TOKEN_ID);
     }
 
     function updateTierAndMintSoulBound(
         uint256 newTokenId,
-        bytes32 signature
+        bytes memory signature
     ) public {
+        if (newTokenId != CONFIDANT_TOKEN_ID && newTokenId != GUARDIAN_TOKEN_ID)
+            revert QQuest__InvalidTokenId();
         bytes32 digest = mintRequestHelper(msg.sender, newTokenId);
         if (!trustedEntity.isValidSignatureNow(digest, signature))
             revert QQuest__InvalidSignature();
 
-        event UserTierUpgraded(address user,uint256 tokenId);
-        _mint(msg.sender, counter);
+        emit UserTierUpgraded(msg.sender, newTokenId);
+        _mint(msg.sender, newTokenId);
     }
 
     function updateReputationScore() public {}
@@ -137,20 +156,20 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
         revert QQuest__NonSoulBoundOpNotAllowed();
     }
 
-
-        /// @notice Grants the TRUSTED_ENTITY role to a new address
+    /// @notice Grants the TRUSTED_ENTITY role to a new address
     /// @param _newEntity The address to grant the TRUSTED_ENTITY role to
     /// @dev Only the contract admin (DEFAULT_ADMIN_ROLE) can call this function
     function updateTrustedIdentityRole(
         address _newEntity
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_newEntity == address(0)) revert QQuest__CantHaveNullTrustedEntity();
+        if (_newEntity == address(0))
+            revert QQuest__CantHaveNullTrustedEntity();
         trustedEntity = _newEntity;
         _grantRole(TRUSTED_ENTITY, _newEntity);
     }
 
     /// @notice Revokes the TRUSTED_ENTITY role from an address
-    /// @param entity The address to revoke the TRUSTED_ENTITY role from
+    /// @param newEntity The address to revoke the TRUSTED_ENTITY role from
     /// @dev Only the contract admin (DEFAULT_ADMIN_ROLE) can call this function
     function revokeTrustedEntityRole(
         address newEntity
@@ -159,5 +178,14 @@ contract QQuestP2PCircleMembership is ERC721, EIP712, AccessControl {
 
         trustedEntity = address(0);
         _revokeRole(TRUSTED_ENTITY, newEntity);
+    }
+
+    /// @notice Returns whether the contract supports a given interface ID
+    /// @param interfaceId The interface ID to check for support
+    /// @return A boolean indicating whether the interface is supported
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, AccessControl) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
