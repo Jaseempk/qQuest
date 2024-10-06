@@ -9,18 +9,24 @@ import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessC
 
 contract QQuestP2PCircle is AccessControl {
     //Error
+    error QQuest__UnlockFailed();
     error QQuest__DueTimeNotIn();
     error QQuest__PenalisedUser();
     error QQuest__InvalidParams();
     error QQuest__InactiveCircle();
     error QQuest__AlreadyPastDueDate();
     error QQuest__CircleDurationOver();
+    error QQuest__NoContributionFound();
     error QQuest__OnlyCreatorCanAccess();
     error QQuest__CircleDurationNotOver();
     error QQuest__IneligibleForCircling();
     error QQuest_InsufficientCollateral();
+    error QQuest__InsufficientCollateral();
+    error QQuest__OnlyContributorCanAccess();
     error QQuest__InsufficientCircleBalance();
     error QQuest__ContributionAmountTooHigh();
+    error QQuest__CanOnlyRedeemAfterDuePeriod();
+    error QQuest__CantRedeemWhenCircleIsActive();
 
     uint256 public constant ALLY_TOKEN_ID = 65108108121;
     uint256 public constant CONFIDANT_TOKEN_ID = 6711111010210510097110116;
@@ -68,7 +74,7 @@ contract QQuestP2PCircle is AccessControl {
         uint256 fundGoalValue;
         uint256 leadTimeDuration;
         uint256 paymentDueBy;
-        // uint128 creatorTier;
+        uint256 collateralAmount;
         bool isCircleActive;
         bool isRepaymentOnTime;
     }
@@ -158,6 +164,7 @@ contract QQuestP2PCircle is AccessControl {
             goalValueToRaise,
             leadTimeDuration,
             paymentDueBy,
+            collateralAmount,
             true,
             false
         );
@@ -255,7 +262,7 @@ contract QQuestP2PCircle is AccessControl {
                 raisedGoalAmount
             );
         } else {
-            IERC20(USDC_ADDRESS).transferFrom(
+            IERC20(USDT_ADDRESS).transferFrom(
                 address(this),
                 msg.sender,
                 raisedGoalAmount
@@ -279,7 +286,7 @@ contract QQuestP2PCircle is AccessControl {
                 amomuntToPayback
             );
         } else {
-            IERC20(USDC_ADDRESS).transferFrom(
+            IERC20(USDT_ADDRESS).transferFrom(
                 msg.sender,
                 address(this),
                 amomuntToPayback
@@ -287,14 +294,53 @@ contract QQuestP2PCircle is AccessControl {
         }
     }
 
-    function unlockCollateral(
-        bytes32 circleId
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unlockCollateral(bytes32 circleId) public {
+        address creator = idToUserCircleData[circleId].creator;
+        if (msg.sender != creator) revert QQuest__OnlyCreatorCanAccess();
         bool isPaybackOnTime = idToUserCircleData[circleId].isRepaymentOnTime;
         if (!isPaybackOnTime) revert QQuest__PenalisedUser();
+
+        uint256 collateralAmount = idToUserCircleData[circleId]
+            .collateralAmount;
+        if (collateralAmount == 0) revert QQuest__InsufficientCollateral();
+
+        idToUserCircleData[circleId].collateralAmount = 0;
+
+        (bool success, ) = payable(creator).call{
+            value: collateralAmount * 1 ether
+        }("");
+        if (!success) revert QQuest__UnlockFailed();
     }
 
-    function redeemContributions() public {}
+    function redeemContributions(bytes32 contributionId) public {
+        address contributor = idToContributionDeets[contributionId].contributor;
+        int256 contributionAmount = idToContributionDeets[contributionId]
+            .contributionAmount;
+        bytes32 circleId = idToContributionDeets[contributionId].circleId;
+        bool isUsdc = idToUserCircleData[circleId].isUSDC;
+        uint256 paymentDueBy = idToUserCircleData[circleId].paymentDueBy;
+        idToContributionDeets[contributionId].contributionAmount = 0;
+        if (msg.sender != contributor)
+            revert QQuest__OnlyContributorCanAccess();
+        if (paymentDueBy > block.timestamp)
+            revert QQuest__CanOnlyRedeemAfterDuePeriod();
+        if (contributionAmount == 0) revert QQuest__NoContributionFound();
+        if (idToUserCircleData[circleId].isCircleActive)
+            revert QQuest__CantRedeemWhenCircleIsActive();
+        if (isUsdc) {
+            IERC20(USDC_ADDRESS).transferFrom(
+                address(this),
+                msg.sender,
+                uint256(contributionAmount)
+            );
+        } else {
+            IERC20(USDT_ADDRESS).transferFrom(
+                address(this),
+                msg.sender,
+                uint256(contributionAmount)
+            );
+        }
+    }
 
     function haveUserPaidBackOnTime(
         bytes32 circleId
@@ -310,14 +356,7 @@ contract QQuestP2PCircle is AccessControl {
         address collateralPriceFeedAddress,
         uint256 timestampForPayback,
         uint256 goalValueToRaise
-    )
-        internal
-        view
-        returns (
-            // address tokenAddress
-            uint256 collateralAmount
-        )
-    {
+    ) internal view returns (uint256 collateralAmount) {
         (, int256 collateralPrice, , , ) = AggregatorV3Interface(
             collateralPriceFeedAddress
         ).latestRoundData();
