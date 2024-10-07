@@ -27,6 +27,12 @@ contract QQuestP2PCircle is AccessControl {
     error QQuest__ContributionAmountTooHigh();
     error QQuest__CanOnlyRedeemAfterDuePeriod();
     error QQuest__CantRedeemWhenCircleIsActive();
+    error QQuest__CircleInsufficientPartialFilling();
+
+    address public immutable i_usdcAddress =
+        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public immutable i_usdtAddress =
+        0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
     uint256 public constant ALLY_TOKEN_ID = 65108108121;
     uint256 public constant CONFIDANT_TOKEN_ID = 6711111010210510097110116;
@@ -38,10 +44,6 @@ contract QQuestP2PCircle is AccessControl {
         0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
     address public constant USDT_PRICE_FEED_ADDRESS =
         0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
-    address public constant USDC_ADDRESS =
-        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public constant USDT_ADDRESS =
-        0xdAC17F958D2ee523a2206206994597C13D831ec7;
     uint128 public constant MAX_DUE_DURATION = (24 * 60 * 60 * 30) * 2; // Two Months in seconds
     uint128 public constant MAX_LEAD_DURATIONS = (24 * 60 * 60 * 7) * 2; // Two Weeks in seconds
     uint128 public constant MONTHLY_DURATION = (24 * 60 * 60 * 30); // Monthly in seconds
@@ -52,7 +54,8 @@ contract QQuestP2PCircle is AccessControl {
     mapping(bytes32 contributionId => ContributionDeets)
         public idToContributionDeets;
     mapping(bytes32 circleId => CircleData) public idToUserCircleData;
-    mapping(bytes32 circleId => int256 balance) public idToCircleAmountToRaise;
+    mapping(bytes32 circleId => int256 balance)
+        public idToCircleAmountLeftToRaise;
     mapping(address user => uint256 reputationScore) public userToReputation;
     mapping(address user => uint256 contributionCount)
         public userToContributionCount;
@@ -62,6 +65,11 @@ contract QQuestP2PCircle is AccessControl {
         Confidant,
         Guardian
     }
+    enum CircleState {
+        Active,
+        Killed,
+        Redeemed
+    }
     struct ContributionDeets {
         address contributor;
         int256 contributionAmount;
@@ -70,13 +78,13 @@ contract QQuestP2PCircle is AccessControl {
 
     struct CircleData {
         address creator;
-        bool isUSDC;
-        uint256 fundGoalValue;
-        uint256 leadTimeDuration;
-        uint256 paymentDueBy;
-        uint256 collateralAmount;
-        bool isCircleActive;
+        uint96 fundGoalValue;
+        uint40 leadTimeDuration;
+        uint40 paymentDueBy;
+        uint96 collateralAmount;
+        CircleState state;
         bool isRepaymentOnTime;
+        bool isUSDC;
     }
 
     event CircleCreated(
@@ -105,9 +113,9 @@ contract QQuestP2PCircle is AccessControl {
     function createNewCircle(
         address collateralPriceFeedAddress,
         address membershipContractAddress,
-        uint256 goalValueToRaise,
-        uint256 deadlineForCircle,
-        uint256 timestampForPayback,
+        uint96 goalValueToRaise,
+        uint40 deadlineForCircle,
+        uint40 timestampForPayback,
         uint16 builderScore,
         bool isUSDC
     ) public payable {
@@ -136,9 +144,9 @@ contract QQuestP2PCircle is AccessControl {
             if (goalValueToRaise > guardianGoalValueThreshold)
                 revert QQuest__InvalidParams();
         }
-        uint256 leadTimeDuration = block.timestamp + deadlineForCircle;
-        uint256 paymentDueBy = leadTimeDuration + timestampForPayback;
-        uint256 collateralAmount = calculateCollateral(
+        uint40 leadTimeDuration = uint40(block.timestamp + deadlineForCircle);
+        uint40 paymentDueBy = leadTimeDuration + timestampForPayback;
+        uint96 collateralAmount = calculateCollateral(
             collateralPriceFeedAddress,
             timestampForPayback,
             goalValueToRaise
@@ -154,17 +162,18 @@ contract QQuestP2PCircle is AccessControl {
                 builderScore
             )
         );
+
         idToUserCircleData[circleId] = CircleData(
             msg.sender,
-            isUSDC,
             goalValueToRaise,
             leadTimeDuration,
             paymentDueBy,
             collateralAmount,
-            true,
-            false
+            CircleState.Active,
+            false,
+            isUSDC
         );
-        idToCircleAmountToRaise[circleId] = int256(goalValueToRaise);
+        idToCircleAmountLeftToRaise[circleId] = int96(goalValueToRaise);
 
         emit CircleCreated(
             msg.sender,
@@ -183,18 +192,18 @@ contract QQuestP2PCircle is AccessControl {
     ) public {
         CircleData memory circle = idToUserCircleData[circleId];
 
-        if (!circle.isCircleActive) revert QQuest__InactiveCircle();
+        if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
         if (block.timestamp > circle.leadTimeDuration)
             revert QQuest__CircleDurationOver();
         if (builderScore < MIN_BUILDER_SCORE)
             revert QQuest__IneligibleForCircling();
 
-        int256 balanceAmountToRaise = idToCircleAmountToRaise[circleId];
+        int256 balanceAmountToRaise = idToCircleAmountLeftToRaise[circleId];
 
         if ((balanceAmountToRaise - amountToContribute) < 0)
             revert QQuest__ContributionAmountTooHigh();
 
-        idToCircleAmountToRaise[circleId] -= amountToContribute;
+        idToCircleAmountLeftToRaise[circleId] -= amountToContribute;
 
         bytes32 contributionId = keccak256(
             abi.encodePacked(
@@ -202,7 +211,7 @@ contract QQuestP2PCircle is AccessControl {
                 builderScore,
                 circleId,
                 amountToContribute,
-                idToCircleAmountToRaise[circleId]
+                idToCircleAmountLeftToRaise[circleId]
             )
         );
         idToContributionDeets[contributionId] = ContributionDeets(
@@ -220,47 +229,69 @@ contract QQuestP2PCircle is AccessControl {
         );
 
         IERC20 token = circle.isUSDC
-            ? IERC20(USDC_ADDRESS)
-            : IERC20(USDT_ADDRESS);
+            ? IERC20(i_usdcAddress)
+            : IERC20(i_usdtAddress);
 
         token.transferFrom(msg.sender, address(this), circle.fundGoalValue);
     }
 
-    function redeemCircleFund(bytes32 circleId) public {
+    function redeemCircleFund(
+        bytes32 circleId,
+        bool isReadyToRedeem
+    ) public returns (bool) {
         CircleData memory circle = idToUserCircleData[circleId];
+        uint96 minimumPartialCircleThreshold = (circle.fundGoalValue) / 2;
+        uint96 circleAmountRaised = uint96(
+            circle.fundGoalValue - uint(idToCircleAmountLeftToRaise[circleId])
+        );
 
         if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
+        if (circleAmountRaised < minimumPartialCircleThreshold)
+            revert QQuest__CircleInsufficientPartialFilling();
 
         if (block.timestamp < circle.leadTimeDuration)
             revert QQuest__CircleDurationNotOver();
 
-        if (!circle.isCircleActive) revert QQuest__InactiveCircle();
+        if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
 
-        if (idToCircleAmountToRaise[circleId] != 0)
+        if (idToCircleAmountLeftToRaise[circleId] != 0)
             revert QQuest__InsufficientCircleBalance();
+        bool isPartiallyFilled = circleAmountRaised < circle.fundGoalValue;
 
-        idToUserCircleData[circleId].isCircleActive = false;
+        if (isPartiallyFilled && (!isReadyToRedeem)) {
+            idToUserCircleData[circleId].state = CircleState.Killed;
+            idToUserCircleData[circleId].fundGoalValue = 0;
+            idToCircleAmountLeftToRaise[circleId] = 0;
+            return false;
+        }
+
+        idToUserCircleData[circleId].state = CircleState.Redeemed;
 
         idToUserCircleData[circleId].fundGoalValue = 0;
+        idToCircleAmountLeftToRaise[circleId] = 0;
         IERC20 token = circle.isUSDC
-            ? IERC20(USDC_ADDRESS)
-            : IERC20(USDT_ADDRESS);
+            ? IERC20(i_usdcAddress)
+            : IERC20(i_usdtAddress);
 
-        token.transferFrom(address(this), msg.sender, circle.fundGoalValue);
+        token.transferFrom(address(this), msg.sender, circleAmountRaised);
+        return true;
     }
 
     function exitPartiallyFilledCircle() public {}
 
     function paybackCircledFund(bytes32 circleId) public {
-        uint256 paymentDueBy = idToUserCircleData[circleId].paymentDueBy;
-        if (paymentDueBy < block.timestamp) revert QQuest__AlreadyPastDueDate();
-        uint256 amomuntToPayback = idToUserCircleData[circleId].fundGoalValue;
+        CircleData memory circle = idToUserCircleData[circleId];
 
-        bool isUsdc = idToUserCircleData[circleId].isUSDC;
+        if (circle.paymentDueBy < block.timestamp)
+            revert QQuest__AlreadyPastDueDate();
+
         idToUserCircleData[circleId].isRepaymentOnTime = true;
-        IERC20 token = isUsdc ? IERC20(USDC_ADDRESS) : IERC20(USDT_ADDRESS);
 
-        token.transferFrom(msg.sender, address(this), amomuntToPayback);
+        IERC20 token = circle.isUSDC
+            ? IERC20(i_usdcAddress)
+            : IERC20(i_usdtAddress);
+
+        token.transferFrom(msg.sender, address(this), circle.fundGoalValue);
     }
 
     function unlockCollateral(bytes32 circleId) public {
@@ -298,12 +329,12 @@ contract QQuestP2PCircle is AccessControl {
             revert QQuest__CanOnlyRedeemAfterDuePeriod();
         if (contributionDeets.contributionAmount == 0)
             revert QQuest__NoContributionFound();
-        if (circle.isCircleActive)
+        if (circle.state == CircleState.Active)
             revert QQuest__CantRedeemWhenCircleIsActive();
 
         IERC20 token = circle.isUSDC
-            ? IERC20(USDC_ADDRESS)
-            : IERC20(USDT_ADDRESS);
+            ? IERC20(i_usdcAddress)
+            : IERC20(i_usdtAddress);
 
         token.transferFrom(
             address(this),
@@ -326,14 +357,14 @@ contract QQuestP2PCircle is AccessControl {
         address collateralPriceFeedAddress,
         uint256 timestampForPayback,
         uint256 goalValueToRaise
-    ) internal view returns (uint256 collateralAmount) {
+    ) internal view returns (uint96 collateralAmount) {
         (, int256 collateralPrice, , , ) = AggregatorV3Interface(
             collateralPriceFeedAddress
         ).latestRoundData();
         uint256 someAmount = goalValueToRaise / uint256(collateralPrice);
         collateralAmount = timestampForPayback > MONTHLY_DURATION
-            ? someAmount * 2
-            : someAmount + (someAmount / 2);
+            ? uint96(someAmount * 2)
+            : uint96(someAmount + (someAmount / 2));
     }
 
     function setSetCircleGoalThreshold(
