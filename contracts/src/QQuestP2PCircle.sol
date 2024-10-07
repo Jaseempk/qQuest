@@ -110,11 +110,7 @@ contract QQuestP2PCircle is AccessControl {
         uint256 timestampForPayback,
         uint16 builderScore,
         bool isUSDC
-    )
-        public
-        payable
-    // TierLevels userTier //what's the use of tier level? //if tier level is given and
-    {
+    ) public payable {
         if (
             builderScore < MIN_BUILDER_SCORE &&
             userToContributionCount[msg.sender] < MIN_CONT_COUNT
@@ -185,21 +181,21 @@ contract QQuestP2PCircle is AccessControl {
         bytes32 circleId,
         int256 amountToContribute
     ) public {
-        uint256 leadTimeDurations = idToUserCircleData[circleId]
-            .leadTimeDuration;
-        bool isActive = idToUserCircleData[circleId].isCircleActive;
-        if (!isActive) revert QQuest__InactiveCircle();
-        if (block.timestamp > leadTimeDurations)
+        CircleData memory circle = idToUserCircleData[circleId];
+
+        if (!circle.isCircleActive) revert QQuest__InactiveCircle();
+        if (block.timestamp > circle.leadTimeDuration)
             revert QQuest__CircleDurationOver();
         if (builderScore < MIN_BUILDER_SCORE)
             revert QQuest__IneligibleForCircling();
 
         int256 balanceAmountToRaise = idToCircleAmountToRaise[circleId];
+
         if ((balanceAmountToRaise - amountToContribute) < 0)
             revert QQuest__ContributionAmountTooHigh();
 
-        bool isUSDC = idToUserCircleData[circleId].isUSDC;
         idToCircleAmountToRaise[circleId] -= amountToContribute;
+
         bytes32 contributionId = keccak256(
             abi.encodePacked(
                 msg.sender,
@@ -219,55 +215,38 @@ contract QQuestP2PCircle is AccessControl {
             msg.sender,
             amountToContribute,
             contributionId,
-            isUSDC,
+            circle.isUSDC,
             circleId
         );
 
-        if (isUSDC) {
-            IERC20(USDC_ADDRESS).transferFrom(
-                msg.sender,
-                address(this),
-                uint256(amountToContribute)
-            );
-        } else {
-            IERC20(USDT_ADDRESS).transferFrom(
-                msg.sender,
-                address(this),
-                uint256(amountToContribute)
-            );
-        }
+        IERC20 token = circle.isUSDC
+            ? IERC20(USDC_ADDRESS)
+            : IERC20(USDT_ADDRESS);
+
+        token.transferFrom(msg.sender, address(this), circle.fundGoalValue);
     }
 
     function redeemCircleFund(bytes32 circleId) public {
-        uint256 leadTimeDurations = idToUserCircleData[circleId]
-            .leadTimeDuration;
-        bool isActive = idToUserCircleData[circleId].isCircleActive;
-        address creator = idToUserCircleData[circleId].creator;
-        if (msg.sender != creator) revert QQuest__OnlyCreatorCanAccess();
+        CircleData memory circle = idToUserCircleData[circleId];
 
-        if (block.timestamp < leadTimeDurations)
+        if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
+
+        if (block.timestamp < circle.leadTimeDuration)
             revert QQuest__CircleDurationNotOver();
-        if (!isActive) revert QQuest__InactiveCircle();
+
+        if (!circle.isCircleActive) revert QQuest__InactiveCircle();
+
         if (idToCircleAmountToRaise[circleId] != 0)
             revert QQuest__InsufficientCircleBalance();
+
         idToUserCircleData[circleId].isCircleActive = false;
 
-        bool isUsdc = idToUserCircleData[circleId].isUSDC;
-        uint256 raisedGoalAmount = idToUserCircleData[circleId].fundGoalValue;
         idToUserCircleData[circleId].fundGoalValue = 0;
-        if (isUsdc) {
-            IERC20(USDC_ADDRESS).transferFrom(
-                address(this),
-                msg.sender,
-                raisedGoalAmount
-            );
-        } else {
-            IERC20(USDT_ADDRESS).transferFrom(
-                address(this),
-                msg.sender,
-                raisedGoalAmount
-            );
-        }
+        IERC20 token = circle.isUSDC
+            ? IERC20(USDC_ADDRESS)
+            : IERC20(USDT_ADDRESS);
+
+        token.transferFrom(address(this), msg.sender, circle.fundGoalValue);
     }
 
     function exitPartiallyFilledCircle() public {}
@@ -279,67 +258,58 @@ contract QQuestP2PCircle is AccessControl {
 
         bool isUsdc = idToUserCircleData[circleId].isUSDC;
         idToUserCircleData[circleId].isRepaymentOnTime = true;
-        if (isUsdc) {
-            IERC20(USDC_ADDRESS).transferFrom(
-                msg.sender,
-                address(this),
-                amomuntToPayback
-            );
-        } else {
-            IERC20(USDT_ADDRESS).transferFrom(
-                msg.sender,
-                address(this),
-                amomuntToPayback
-            );
-        }
+        IERC20 token = isUsdc ? IERC20(USDC_ADDRESS) : IERC20(USDT_ADDRESS);
+
+        token.transferFrom(msg.sender, address(this), amomuntToPayback);
     }
 
     function unlockCollateral(bytes32 circleId) public {
-        address creator = idToUserCircleData[circleId].creator;
-        if (msg.sender != creator) revert QQuest__OnlyCreatorCanAccess();
-        bool isPaybackOnTime = idToUserCircleData[circleId].isRepaymentOnTime;
-        if (!isPaybackOnTime) revert QQuest__PenalisedUser();
+        CircleData memory circle = idToUserCircleData[circleId];
 
-        uint256 collateralAmount = idToUserCircleData[circleId]
-            .collateralAmount;
-        if (collateralAmount == 0) revert QQuest__InsufficientCollateral();
+        if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
+
+        if (!circle.isRepaymentOnTime) revert QQuest__PenalisedUser();
+
+        if (circle.collateralAmount == 0)
+            revert QQuest__InsufficientCollateral();
 
         idToUserCircleData[circleId].collateralAmount = 0;
 
-        (bool success, ) = payable(creator).call{
-            value: collateralAmount * 1 ether
+        (bool success, ) = payable(circle.creator).call{
+            value: circle.collateralAmount * 1 ether
         }("");
         if (!success) revert QQuest__UnlockFailed();
     }
 
     function redeemContributions(bytes32 contributionId) public {
-        address contributor = idToContributionDeets[contributionId].contributor;
-        int256 contributionAmount = idToContributionDeets[contributionId]
-            .contributionAmount;
-        bytes32 circleId = idToContributionDeets[contributionId].circleId;
-        bool isUsdc = idToUserCircleData[circleId].isUSDC;
-        uint256 paymentDueBy = idToUserCircleData[circleId].paymentDueBy;
+        ContributionDeets memory contributionDeets = idToContributionDeets[
+            contributionId
+        ];
+
+        CircleData memory circle = idToUserCircleData[
+            contributionDeets.circleId
+        ];
+
         idToContributionDeets[contributionId].contributionAmount = 0;
-        if (msg.sender != contributor)
+
+        if (msg.sender != contributionDeets.contributor)
             revert QQuest__OnlyContributorCanAccess();
-        if (paymentDueBy > block.timestamp)
+        if (circle.paymentDueBy > block.timestamp)
             revert QQuest__CanOnlyRedeemAfterDuePeriod();
-        if (contributionAmount == 0) revert QQuest__NoContributionFound();
-        if (idToUserCircleData[circleId].isCircleActive)
+        if (contributionDeets.contributionAmount == 0)
+            revert QQuest__NoContributionFound();
+        if (circle.isCircleActive)
             revert QQuest__CantRedeemWhenCircleIsActive();
-        if (isUsdc) {
-            IERC20(USDC_ADDRESS).transferFrom(
-                address(this),
-                msg.sender,
-                uint256(contributionAmount)
-            );
-        } else {
-            IERC20(USDT_ADDRESS).transferFrom(
-                address(this),
-                msg.sender,
-                uint256(contributionAmount)
-            );
-        }
+
+        IERC20 token = circle.isUSDC
+            ? IERC20(USDC_ADDRESS)
+            : IERC20(USDT_ADDRESS);
+
+        token.transferFrom(
+            address(this),
+            msg.sender,
+            uint256(contributionDeets.contributionAmount)
+        );
     }
 
     function haveUserPaidBackOnTime(
@@ -364,5 +334,19 @@ contract QQuestP2PCircle is AccessControl {
         collateralAmount = timestampForPayback > MONTHLY_DURATION
             ? someAmount * 2
             : someAmount + (someAmount / 2);
+    }
+
+    function setSetCircleGoalThreshold(
+        uint256 allyNewThreshold,
+        uint256 guardianThreshold
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (allyNewThreshold == 0) {
+            guardianGoalValueThreshold = guardianThreshold;
+        } else if (guardianThreshold == 0) {
+            allyGoalValueThreshold = allyNewThreshold;
+        } else {
+            allyGoalValueThreshold = allyNewThreshold;
+            guardianGoalValueThreshold = guardianThreshold;
+        }
     }
 }
