@@ -259,21 +259,11 @@ contract QQuestP2PCircle is AccessControl {
         bool isPartiallyFilled = circleAmountRaised < circle.fundGoalValue;
 
         if (isPartiallyFilled && (!isReadyToRedeem)) {
-            idToUserCircleData[circleId].state = CircleState.Killed;
-            idToUserCircleData[circleId].fundGoalValue = 0;
-            idToCircleAmountLeftToRaise[circleId] = 0;
+            _killCircle(circleId);
             return false;
         }
 
-        idToUserCircleData[circleId].state = CircleState.Redeemed;
-
-        idToUserCircleData[circleId].fundGoalValue = 0;
-        idToCircleAmountLeftToRaise[circleId] = 0;
-        IERC20 token = circle.isUSDC
-            ? IERC20(i_usdcAddress)
-            : IERC20(i_usdtAddress);
-
-        token.transferFrom(address(this), msg.sender, circleAmountRaised);
+        _redeemCircle(circleId, circleAmountRaised);
         return true;
     }
 
@@ -379,5 +369,24 @@ contract QQuestP2PCircle is AccessControl {
             allyGoalValueThreshold = allyNewThreshold;
             guardianGoalValueThreshold = guardianThreshold;
         }
+    }
+
+    function _killCircle(bytes32 circleId) internal {
+        CircleData storage circle = idToUserCircleData[circleId];
+        circle.state = CircleState.Killed;
+        circle.fundGoalValue = 0;
+        idToCircleAmountLeftToRaise[circleId] = 0;
+    }
+
+    function _redeemCircle(bytes32 circleId, uint96 amount) internal {
+        CircleData storage circle = idToUserCircleData[circleId];
+        circle.state = CircleState.Redeemed;
+        circle.fundGoalValue = 0;
+        idToCircleAmountLeftToRaise[circleId] = 0;
+
+        IERC20 token = circle.isUSDC
+            ? IERC20(i_usdcAddress)
+            : IERC20(i_usdtAddress);
+        token.transferFrom(address(this), circle.creator, amount);
     }
 }
