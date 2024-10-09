@@ -4,9 +4,10 @@ pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
-import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {Address} from "lib/openzeppelin-contracts/contracts/utils/Address.sol";
+import {QQuestP2PCircleMembership} from "./QQuestP2PCircleMembership.sol";
+import {QQuestReputationManagment} from "./QQuestReputationManagment.sol";
 
 contract QQuestP2PCircle is AccessControl {
     using Address for address;
@@ -19,6 +20,7 @@ contract QQuestP2PCircle is AccessControl {
     error QQuest__AlreadyPastDueDate();
     error QQuest__CircleDurationOver();
     error QQuest__NoContributionFound();
+    error QQuest__UserCantBePenalised();
     error QQuest__StillWithinDuePeriod();
     error QQuest__OnlyCreatorCanAccess();
     error QQuest__CircleDurationNotOver();
@@ -31,20 +33,18 @@ contract QQuestP2PCircle is AccessControl {
     error QQuest__ContributionAmountTooHigh();
     error QQuest__CanOnlyRedeemAfterDuePeriod();
     error QQuest__CantRedeemWhenCircleIsActive();
+    error QQuest__UserAlreadyBannedFromPlatform();
     error QQuest__CircleInsufficientPartialFilling();
+
+    QQuestP2PCircleMembership membershipContract;
+    QQuestReputationManagment reputationManagmentContract;
 
     address public immutable i_usdcAddress =
         0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public immutable i_usdtAddress =
         0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
-    address public i_membershipContractAddress;
-
-    uint96 public constant GUARDIAN_THRESHOLD = 0;
-
-    uint256 public constant ALLY_TOKEN_ID = 65108108121;
-    uint256 public constant CONFIDANT_TOKEN_ID = 6711111010210510097110116;
-    uint256 public constant GUARDIAN_TOKEN_ID = 711179711410010597110;
+    // uint96 public constant GUARDIAN_THRESHOLD = 0;
 
     uint8 public constant MIN_BUILDER_SCORE = 25;
     uint8 public constant MIN_CONT_COUNT = 2;
@@ -52,21 +52,25 @@ contract QQuestP2PCircle is AccessControl {
         0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
     address public constant USDT_PRICE_FEED_ADDRESS =
         0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
-    uint128 public constant MAX_DUE_DURATION = (24 * 60 * 60 * 30) * 2; // Two Months in seconds
-    uint128 public constant MAX_LEAD_DURATIONS = (24 * 60 * 60 * 7) * 2; // Two Weeks in seconds
-    uint128 public constant MONTHLY_DURATION = (24 * 60 * 60 * 30); // Monthly in seconds
+    uint128 public constant MAX_DUE_DURATION = 60 days; // Two Months in seconds
+    uint128 public constant MAX_LEAD_DURATIONS = 14 days; // Two Weeks in seconds
+    uint128 public constant MONTHLY_DURATION = 30 days; // Monthly in seconds
 
     uint256 public allyGoalValueThreshold;
     uint256 public guardianGoalValueThreshold;
 
+    mapping(address user => bool isBanned) public isUserBanned;
     mapping(bytes32 contributionId => ContributionDeets)
         public idToContributionDeets;
     mapping(bytes32 circleId => CircleData) public idToUserCircleData;
     mapping(bytes32 circleId => int256 balance)
         public idToCircleAmountLeftToRaise;
-    mapping(address user => uint96 reputationScore) public userToReputation;
-    mapping(address user => uint256 contributionCount)
+
+    mapping(address user => uint16 contributionCount)
         public userToContributionCount;
+    mapping(address user => uint16 repaymentCount) public userToRepaymentCount;
+    mapping(address user => uint8 numFailedRepayments)
+        public userToFailedRepaymentCount;
 
     enum TierLevels {
         Ally,
@@ -124,17 +128,32 @@ contract QQuestP2PCircle is AccessControl {
         bytes32 circleId
     );
 
-    constructor(uint256 allyThreshold, uint guardianThreshold) {
+    event RepaymentFailed(
+        address creator,
+        uint8 paymentFailureCount,
+        bytes32 circleId,
+        uint256 timeStamp
+    );
+
+    constructor(
+        uint256 allyThreshold,
+        uint guardianThreshold,
+        QQuestP2PCircleMembership someMembership,
+        QQuestReputationManagment reputationContract
+    ) {
         if (allyThreshold == 0 || guardianThreshold == 0)
             revert QQuest__InvalidThresholdValue();
         allyGoalValueThreshold = allyThreshold;
         guardianGoalValueThreshold = guardianThreshold;
+        membershipContract = QQuestP2PCircleMembership(someMembership);
+        reputationManagmentContract = QQuestReputationManagment(
+            reputationContract
+        );
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function createNewCircle(
         address collateralPriceFeedAddress,
-        address membershipContractAddress,
         uint96 goalValueToRaise,
         uint40 deadlineForCircle,
         uint40 timestampForPayback,
@@ -148,6 +167,8 @@ contract QQuestP2PCircle is AccessControl {
             timestampForPayback,
             goalValueToRaise
         );
+        if (isUserBanned[msg.sender])
+            revert QQuest__UserAlreadyBannedFromPlatform();
         if (
             builderScore < MIN_BUILDER_SCORE &&
             userToContributionCount[msg.sender] < MIN_CONT_COUNT
@@ -156,15 +177,15 @@ contract QQuestP2PCircle is AccessControl {
         }
 
         if (
-            IERC1155(membershipContractAddress).balanceOf(
+            membershipContract.balanceOf(
                 msg.sender,
-                GUARDIAN_TOKEN_ID
+                membershipContract.GUARDIAN_TOKEN_ID()
             ) == 0
         ) {
             if (
-                IERC1155(membershipContractAddress).balanceOf(
+                membershipContract.balanceOf(
                     msg.sender,
-                    ALLY_TOKEN_ID
+                    membershipContract.ALLY_TOKEN_ID()
                 ) ==
                 0 ||
                 (goalValueToRaise > allyGoalValueThreshold)
@@ -176,7 +197,7 @@ contract QQuestP2PCircle is AccessControl {
         if (msg.value < collateralAmount * 1 ether) {
             revert QQuest_InsufficientCollateral();
         }
-        i_membershipContractAddress = membershipContractAddress;
+
         bytes32 circleId = keccak256(
             abi.encodePacked(
                 msg.sender,
@@ -216,6 +237,8 @@ contract QQuestP2PCircle is AccessControl {
         CircleData memory circle = idToUserCircleData[circleId];
         int256 balanceAmountToRaise = idToCircleAmountLeftToRaise[circleId];
 
+        if (isUserBanned[msg.sender])
+            revert QQuest__UserAlreadyBannedFromPlatform();
         if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
         if (block.timestamp > circle.leadTimeDuration)
             revert QQuest__CircleDurationOver();
@@ -242,6 +265,10 @@ contract QQuestP2PCircle is AccessControl {
             circleId
         );
         userToContributionCount[msg.sender] += 1;
+        reputationManagmentContract.updateUserReputation(
+            userToContributionCount[msg.sender],
+            userToRepaymentCount[msg.sender]
+        );
         emit CircleContribution(
             msg.sender,
             amountToContribute,
@@ -257,16 +284,15 @@ contract QQuestP2PCircle is AccessControl {
         token.transferFrom(msg.sender, address(this), circle.fundGoalValue);
     }
 
-    function redeemCircleFund(
-        bytes32 circleId,
-        bool isReadyToRedeem
-    ) public returns (bool) {
+    function redeemCircleFund(bytes32 circleId, bool isReadyToRedeem) public {
         CircleData memory circle = idToUserCircleData[circleId];
         uint96 minimumPartialCircleThreshold = (circle.fundGoalValue) / 2;
         uint96 circleAmountRaised = uint96(
             circle.fundGoalValue - uint(idToCircleAmountLeftToRaise[circleId])
         );
 
+        if (isUserBanned[msg.sender])
+            revert QQuest__UserAlreadyBannedFromPlatform();
         if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
         if (circleAmountRaised < minimumPartialCircleThreshold)
             revert QQuest__CircleInsufficientPartialFilling();
@@ -282,18 +308,32 @@ contract QQuestP2PCircle is AccessControl {
 
         if (isPartiallyFilled && (!isReadyToRedeem)) {
             _killCircle(circleId);
-            return false;
+            return;
         }
 
         _redeemCircle(circleId, circleAmountRaised);
-        return true;
     }
 
     function paybackCircledFund(bytes32 circleId) public {
         CircleData memory circle = idToUserCircleData[circleId];
+        if (isUserBanned[msg.sender])
+            revert QQuest__UserAlreadyBannedFromPlatform();
+        if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
 
-        if (circle.paymentDueBy < block.timestamp)
-            revert QQuest__AlreadyPastDueDate();
+        if (circle.paymentDueBy < block.timestamp) {
+            idToUserCircleData[circleId].isRepaymentOnTime = false;
+            userToFailedRepaymentCount[circle.creator] += 1;
+            reputationManagmentContract.slashUserReputation();
+            emit RepaymentFailed(
+                circle.creator,
+                userToFailedRepaymentCount[circle.creator],
+                circleId,
+                block.timestamp
+            );
+            return;
+        }
+
+        userToRepaymentCount[msg.sender] += 1;
 
         idToUserCircleData[circleId].isRepaymentOnTime = true;
 
@@ -301,11 +341,18 @@ contract QQuestP2PCircle is AccessControl {
             ? IERC20(i_usdcAddress)
             : IERC20(i_usdtAddress);
 
+        reputationManagmentContract.updateUserReputation(
+            userToContributionCount[msg.sender],
+            userToRepaymentCount[msg.sender]
+        );
         token.transferFrom(msg.sender, address(this), circle.fundGoalValue);
     }
 
     function unlockCollateral(bytes32 circleId) public {
         CircleData memory circle = idToUserCircleData[circleId];
+
+        if (isUserBanned[msg.sender])
+            revert QQuest__UserAlreadyBannedFromPlatform();
 
         if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
 
@@ -387,7 +434,7 @@ contract QQuestP2PCircle is AccessControl {
             circle.state != CircleState.Redeemed &&
             circle.state != CircleState.Killed
         ) {
-            _slashReputation(circle);
+            reputationManagmentContract.slashUserReputation();
         }
     }
 
@@ -407,25 +454,10 @@ contract QQuestP2PCircle is AccessControl {
         }
     }
 
-    function _slashReputation(CircleData memory circle) private {
-        /**
-         *
-         * if the user belongs to ally, then the slashing is lesser
-         * if the user belongs to confidant, then slashing threshold is bit higher
-         * if user belongs  to guardian then the slashing threshold is maximum
-         * but what's the efficient way to check if a user is ally or confidant or guardian ?
-         *
-         *
-         * check whether the user holds guardian=> if yes then, maximum slash threshold
-         * else if the user holds confidant, then the mid slash threshold
-         * else just minimum threshold
-         */
-        if (
-            IERC1155(i_membershipContractAddress).balanceOf(
-                circle.creator,
-                GUARDIAN_TOKEN_ID
-            ) == 1
-        ) {}
+    function banUser(address user) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (userToFailedRepaymentCount[user] <= 1)
+            revert QQuest__UserCantBePenalised();
+        isUserBanned[user] = true;
     }
 
     function _killCircle(bytes32 circleId) internal {
