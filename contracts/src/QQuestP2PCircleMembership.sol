@@ -18,7 +18,7 @@ contract QQuestP2PCircleMembership is ERC1155, EIP712, AccessControl {
     error QQuest__CantHaveNullTrustedEntity();
 
     address private trustedEntity;
-    string constant VERSION = "1.1";
+    string constant VERSION = "1.11";
     uint8 public constant MIN_BUILDER_SCORE = 25;
     uint256 public constant ALLY_TOKEN_ID = 65108108121;
     uint256 public constant CONFIDANT_TOKEN_ID = 6711111010210510097110116;
@@ -51,9 +51,10 @@ contract QQuestP2PCircleMembership is ERC1155, EIP712, AccessControl {
 
     constructor(
         string memory name,
+        string memory version,
         string memory uri,
         address _trustedEntity
-    ) ERC1155(uri) EIP712(name, VERSION) {
+    ) ERC1155(uri) EIP712(name, version) {
         trustedEntity = _trustedEntity;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(TRUSTED_ENTITY, _trustedEntity);
@@ -94,8 +95,6 @@ contract QQuestP2PCircleMembership is ERC1155, EIP712, AccessControl {
         emit UserTierUpgraded(msg.sender, newTokenId);
         _mint(msg.sender, newTokenId, 1, "");
     }
-
-    function updateReputationScore() public {}
 
     /// @notice Burns (destroys) a QQM NFT
     /// @param _tokenId The token ID of the QQM to burn
