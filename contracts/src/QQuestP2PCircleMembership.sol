@@ -28,14 +28,6 @@ contract QQuestP2PCircleMembership is ERC1155, EIP712, AccessControl {
 
     bytes32 public constant TRUSTED_ENTITY = keccak256("TRUSTED_ENTITY");
 
-    mapping(address => mapping(uint256 => TierLevels)) public userToTierId;
-
-    enum TierLevels {
-        Ally,
-        Confidant,
-        Guardian
-    }
-
     struct MintRequest {
         address userAddress;
         uint256 newTokenId;
@@ -70,7 +62,6 @@ contract QQuestP2PCircleMembership is ERC1155, EIP712, AccessControl {
 
         bytes32 digest = mintRequestHelper(msg.sender, ALLY_TOKEN_ID);
 
-        userToTierId[msg.sender][ALLY_TOKEN_ID] = TierLevels.Ally;
         if (!trustedEntity.isValidSignatureNow(digest, signature)) {
             revert QQuest__InvalidSignature();
         }

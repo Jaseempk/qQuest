@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.24;
 import {QQuestP2PCircleMembership} from "./QQuestP2PCircleMembership.sol";
+import {console} from "forge-std/console.sol";
 
 contract QQuestReputationManagment {
     //Error
@@ -24,7 +25,7 @@ contract QQuestReputationManagment {
     function updateUserReputation(
         uint16 numberOfContributions,
         uint16 numberOfRepayments
-    ) public returns (uint16) {
+    ) internal returns (uint16) {
         if (numberOfContributions == 0 && numberOfRepayments == 0)
             revert QQ__InvalidParams();
         uint16 userReputations = (numberOfContributions *
@@ -36,7 +37,7 @@ contract QQuestReputationManagment {
         return userReputation[msg.sender];
     }
 
-    function slashUserReputation(address user) public {
+    function slashUserReputation(address user) internal {
         if (
             membershipContract.balanceOf(
                 user,
@@ -65,6 +66,7 @@ contract QQuestReputationManagment {
     }
 
     function getUserReputation(address user) public view returns (uint16) {
+        console.log("userReputationsss:", userReputation[user]);
         return userReputation[user];
     }
 }
