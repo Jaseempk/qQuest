@@ -5,7 +5,8 @@ import "forge-std/Test.sol";
 import {QQuestP2PCircleMembership} from "../../src/QQuestP2PCircleMembership.sol";
 import {QQuestP2PCircle} from "../../src/QQuestP2PCircle.sol";
 import {QQuestReputationManagment} from "../../src/QQuestReputationManagment.sol";
-import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
+import {AggregatorV3Interface} from
+    "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 import {EIP712} from "lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -17,15 +18,11 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     IERC20 public usdt;
     string name = "qQuest";
     string version = "1.11";
-    string uri =
-        "https://bafybeier47s56rr2driy6mkj2q7v7j2wwnz2bxaibtq7htopvndsgfu37e.ipfs.w3s.link";
+    string uri = "https://bafybeier47s56rr2driy6mkj2q7v7j2wwnz2bxaibtq7htopvndsgfu37e.ipfs.w3s.link";
     address trustedEntity = 0xE6F3889C8EbB361Fa914Ee78fa4e55b1BBed3A96;
-    uint256 trustedEntityPrivKey =
-        0xfbf992b0e25ad29c85aae3d69fcb7f09240dd2588ecee449a4934b9e499102cc;
-    address public constant USDC_WHALE =
-        0x55FE002aefF02F77364de339a1292923A15844B8;
-    address public constant USDT_WHALE =
-        0x5754284f345afc66a98fbB0a0Afe71e0F007B949;
+    uint256 trustedEntityPrivKey = 0xfbf992b0e25ad29c85aae3d69fcb7f09240dd2588ecee449a4934b9e499102cc;
+    address public constant USDC_WHALE = 0x55FE002aefF02F77364de339a1292923A15844B8;
+    address public constant USDT_WHALE = 0x5754284f345afc66a98fbB0a0Afe71e0F007B949;
     uint128 public constant MONTHLY_DURATION = 30 days; // Monthly in seconds
 
     address public alice;
@@ -43,12 +40,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
 
     uint40 paymentDueBy = leadTimeDuration + timestampForPayback;
 
-    event RepaymentFailed(
-        address creator,
-        uint8 paymentFailureCount,
-        bytes32 circleId,
-        uint256 timeStamp
-    );
+    event RepaymentFailed(address creator, uint8 paymentFailureCount, bytes32 circleId, uint256 timeStamp);
 
     constructor() EIP712(name, version) {}
 
@@ -61,12 +53,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint256 charlieBuilderScore = 29;
 
         // Deploy mock contracts
-        membership = new QQuestP2PCircleMembership(
-            name,
-            version,
-            uri,
-            trustedEntity
-        );
+        membership = new QQuestP2PCircleMembership(name, version, uri, trustedEntity);
         reputation = new QQuestReputationManagment(membership);
 
         // Deploy main contract
@@ -82,18 +69,9 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         bob = USDT_WHALE;
         charlie = makeAddr("charlie");
 
-        bytes32 aliceDigest = membership.mintRequestHelper(
-            alice,
-            membership.ALLY_TOKEN_ID()
-        );
-        bytes32 charlieDigest = membership.mintRequestHelper(
-            charlie,
-            membership.ALLY_TOKEN_ID()
-        );
-        bytes32 bobDigest = membership.mintRequestHelper(
-            bob,
-            membership.ALLY_TOKEN_ID()
-        );
+        bytes32 aliceDigest = membership.mintRequestHelper(alice, membership.ALLY_TOKEN_ID());
+        bytes32 charlieDigest = membership.mintRequestHelper(charlie, membership.ALLY_TOKEN_ID());
+        bytes32 bobDigest = membership.mintRequestHelper(bob, membership.ALLY_TOKEN_ID());
         bytes memory aliceSig = signSale(aliceDigest, trustedEntityPrivKey);
         bytes memory bobSig = signSale(bobDigest, trustedEntityPrivKey);
         bytes memory charlieSig = signSale(charlieDigest, trustedEntityPrivKey);
@@ -125,11 +103,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         vm.startPrank(alice);
         usdc.approve(address(circle), goalValue);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), timestampForPayback, goalValue);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
 
@@ -143,32 +117,16 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         );
         vm.stopPrank();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(alice, goalValue, paymentDueBy, builderScore)
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValue, paymentDueBy, builderScore));
 
-        _assertCircleData(
-            alice,
-            circleId,
-            goalValue,
-            leadTimeDuration,
-            paymentDueBy,
-            uint96(collateralAmount)
-        );
+        _assertCircleData(alice, circleId, goalValue, leadTimeDuration, paymentDueBy, uint96(collateralAmount));
     }
 
     function testContributeToCircle() public {
         // First, create a circle
         testCreateNewCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
         int256 amountToContribute = 500; // 500 USDC
 
         vm.startPrank(bob);
@@ -189,14 +147,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         testCreateNewCircle();
         testContributeToCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Contribute the remaining amount
         vm.startPrank(charlie);
@@ -215,17 +166,8 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint256 aliceBalanceAfter = usdc.balanceOf(alice);
         assertEq(aliceBalanceAfter - aliceBalanceBefore, 1000);
 
-        (
-            ,
-            ,
-            ,
-            ,
-            uint96 collateral,
-            QQuestP2PCircle.CircleState state,
-            ,
-
-        ) = circle.idToUserCircleData(circleId);
-        assertEq(uint(state), uint(QQuestP2PCircle.CircleState.Redeemed));
+        (,,,, uint96 collateral, QQuestP2PCircle.CircleState state,,) = circle.idToUserCircleData(circleId);
+        assertEq(uint256(state), uint256(QQuestP2PCircle.CircleState.Redeemed));
         assertEq(collateral, 0);
     }
 
@@ -233,14 +175,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         // Create, fund, and redeem a circle
         testRedeemCircleFund();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Fast forward to just before the due date
         vm.warp(block.timestamp + 29 days);
@@ -250,16 +185,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         circle.paybackCircledFund(circleId);
         vm.stopPrank();
 
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            QQuestP2PCircle.CircleState state,
-            bool isRepaymentOnTime,
-
-        ) = circle.idToUserCircleData(circleId);
+        (,,,,, QQuestP2PCircle.CircleState state, bool isRepaymentOnTime,) = circle.idToUserCircleData(circleId);
         assertTrue(isRepaymentOnTime);
 
         uint16 aliceRepayments = circle.userToRepaymentCount(alice);
@@ -270,14 +196,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         // Create, fund, redeem, and payback a circle
         testPaybackCircledFund();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                timestampForPayback,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, timestampForPayback, builderScore));
 
         uint256 aliceBalanceBefore = alice.balance;
 
@@ -287,7 +206,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint256 aliceBalanceAfter = alice.balance;
         assertTrue(aliceBalanceAfter > aliceBalanceBefore);
 
-        (, , , , uint96 collateral, , , ) = circle.idToUserCircleData(circleId);
+        (,,,, uint96 collateral,,,) = circle.idToUserCircleData(circleId);
         assertEq(collateral, 0);
     }
 
@@ -296,23 +215,8 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         testCreateNewCircle();
         testContributeToCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                timestampForPayback,
-                builderScore
-            )
-        );
-        bytes32 contributionId = keccak256(
-            abi.encodePacked(
-                bob,
-                uint16(75),
-                circleId,
-                int256(500e6),
-                int256(500e6)
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, timestampForPayback, builderScore));
+        bytes32 contributionId = keccak256(abi.encodePacked(bob, uint16(75), circleId, int256(500e6), int256(500e6)));
 
         // Fast forward past the due date
         vm.warp(block.timestamp + 38 days);
@@ -336,11 +240,8 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         vm.startPrank(alice);
         usdc.approve(address(circle), goalValueToRaise);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            timestampForPayback,
-            goalValueToRaise
-        );
+        uint256 collateralAmount =
+            calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), timestampForPayback, goalValueToRaise);
         vm.expectRevert(QQuestP2PCircle.QQuest_InsufficientCollateral.selector);
         circle.createNewCircle{value: (collateralAmount * 1 ether) / 2}(
             circle.ETH_PRICE_FEED_ADDRESS(),
@@ -356,14 +257,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     function test_failContributeToCircle_afterDeadline() public {
         testCreateNewCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                timestampForPayback,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, timestampForPayback, builderScore));
         int256 amountToContribute = 500; // 500 USDC
 
         // Fast forward past the deadline
@@ -380,14 +274,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         testCreateNewCircle();
         testContributeToCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         vm.prank(alice);
         vm.expectRevert(QQuestP2PCircle.QQuest__CircleDurationNotOver.selector);
@@ -397,31 +284,17 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     function test_failPaybackCircledFund_afterDueDate() public {
         testRedeemCircleFund();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Fast forward past the due date
         vm.warp(block.timestamp + 38 days);
 
-        uint8 userFailedPaymentCount = circle.userToFailedRepaymentCount(
-            alice
-        ) + 1;
+        uint8 userFailedPaymentCount = circle.userToFailedRepaymentCount(alice) + 1;
 
         vm.startPrank(alice);
 
         vm.expectEmit();
-        emit RepaymentFailed(
-            alice,
-            userFailedPaymentCount,
-            circleId,
-            block.timestamp
-        );
+        emit RepaymentFailed(alice, userFailedPaymentCount, circleId, block.timestamp);
         circle.paybackCircledFund(circleId);
         vm.stopPrank();
     }
@@ -443,10 +316,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint256 newGuardianThreshold = 10000;
 
         vm.prank(address(this));
-        circle.setSetCircleGoalThreshold(
-            newAllyThreshold,
-            newGuardianThreshold
-        );
+        circle.setSetCircleGoalThreshold(newAllyThreshold, newGuardianThreshold);
 
         assertEq(circle.allyGoalValueThreshold(), newAllyThreshold);
         assertEq(circle.guardianGoalValueThreshold(), newGuardianThreshold);
@@ -460,14 +330,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     function test_circleLifecycle() public {
         // Create circle
         testCreateNewCircle();
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Contribute
         vm.startPrank(bob);
@@ -497,17 +360,9 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         circle.unlockCollateral(circleId);
 
         // Verify final state
-        (
-            ,
-            ,
-            ,
-            ,
-            uint96 collateral,
-            QQuestP2PCircle.CircleState state,
-            bool isRepaymentOnTime,
-
-        ) = circle.idToUserCircleData(circleId);
-        assertEq(uint(state), uint(QQuestP2PCircle.CircleState.Redeemed));
+        (,,,, uint96 collateral, QQuestP2PCircle.CircleState state, bool isRepaymentOnTime,) =
+            circle.idToUserCircleData(circleId);
+        assertEq(uint256(state), uint256(QQuestP2PCircle.CircleState.Redeemed));
         assertTrue(isRepaymentOnTime);
         assertEq(collateral, 0);
 
@@ -524,14 +379,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     function test_circleKill() public {
         // Create circle
         testCreateNewCircle();
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Partial contribution
         vm.startPrank(bob);
@@ -550,29 +398,12 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         vm.prank(alice);
         circle.redeemCircleFund(circleId, false);
 
-        (
-            ,
-            uint96 fundGoalValue,
-            ,
-            ,
-            ,
-            QQuestP2PCircle.CircleState state,
-            ,
-
-        ) = circle.idToUserCircleData(circleId);
-        assertEq(uint(state), uint(QQuestP2PCircle.CircleState.Killed));
+        (, uint96 fundGoalValue,,,, QQuestP2PCircle.CircleState state,,) = circle.idToUserCircleData(circleId);
+        assertEq(uint256(state), uint256(QQuestP2PCircle.CircleState.Killed));
         assertEq(fundGoalValue, 0);
 
         // Verify contributors can redeem their contributions
-        bytes32 contributionId = keccak256(
-            abi.encodePacked(
-                bob,
-                uint256(75),
-                circleId,
-                int256(400),
-                int256(600)
-            )
-        );
+        bytes32 contributionId = keccak256(abi.encodePacked(bob, uint256(75), circleId, int256(400), int256(600)));
 
         uint256 bobBalanceBefore = usdc.balanceOf(bob);
 
@@ -595,21 +426,12 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         vm.startPrank(alice);
         usdc.approve(address(circle), goalValue);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            _timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), _timestampForPayback, goalValue);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
         // vm.expectRevert(QQuestP2PCircle.QQuest__InvalidParamss.selector);
         circle.createNewCircle{value: collateralAmount * collateralPrecision}(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            goalValue,
-            _deadlineForCircle,
-            _timestampForPayback,
-            _builderScore,
-            isUSDC
+            circle.ETH_PRICE_FEED_ADDRESS(), goalValue, _deadlineForCircle, _timestampForPayback, _builderScore, isUSDC
         );
         vm.stopPrank();
     }
@@ -619,14 +441,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         testCreateNewCircle();
         testContributeToCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Complete the funding
         vm.startPrank(charlie);
@@ -670,36 +485,18 @@ contract QQuestP2PCircleTest is Test, EIP712 {
 
         vm.startPrank(bob);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            _timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), _timestampForPayback, goalValue);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
 
         circle.createNewCircle{value: collateralAmount * collateralPrecision}(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            goalValue,
-            _deadlineForCircle,
-            _timestampForPayback,
-            _builderScore,
-            isUSDC
+            circle.ETH_PRICE_FEED_ADDRESS(), goalValue, _deadlineForCircle, _timestampForPayback, _builderScore, isUSDC
         );
         vm.stopPrank();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(bob, goalValue, _paymentDueBy, _builderScore)
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(bob, goalValue, _paymentDueBy, _builderScore));
 
-        _assertCircleData(
-            bob,
-            circleId,
-            goalValue,
-            _leadTimeDuration,
-            _paymentDueBy,
-            uint96(collateralAmount)
-        );
+        _assertCircleData(bob, circleId, goalValue, _leadTimeDuration, _paymentDueBy, uint96(collateralAmount));
     }
 
     function test_multipleCirclesInteraction() public {
@@ -717,12 +514,8 @@ contract QQuestP2PCircleTest is Test, EIP712 {
 
         uint40 _paymentDueBy = _leadTimeDuration + _timestampForPayback;
 
-        bytes32 aliceCircleId = keccak256(
-            abi.encodePacked(alice, aliceGoalValue, paymentDueBy, builderScore)
-        );
-        bytes32 bobCircleId = keccak256(
-            abi.encodePacked(bob, bobGoalValue, _paymentDueBy, _builderScore)
-        );
+        bytes32 aliceCircleId = keccak256(abi.encodePacked(alice, aliceGoalValue, paymentDueBy, builderScore));
+        bytes32 bobCircleId = keccak256(abi.encodePacked(bob, bobGoalValue, _paymentDueBy, _builderScore));
 
         // Contribute to both circles
         vm.startPrank(charlie);
@@ -743,29 +536,11 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         circle.redeemCircleFund(bobCircleId, true);
 
         // Verify both circles are redeemed
-        (
-            ,
-            uint96 aliceFundGoal,
-            ,
-            ,
-            ,
-            QQuestP2PCircle.CircleState aliceState,
-            ,
+        (, uint96 aliceFundGoal,,,, QQuestP2PCircle.CircleState aliceState,,) = circle.idToUserCircleData(aliceCircleId);
+        (, uint96 bobFundGoal,,,, QQuestP2PCircle.CircleState bobState,,) = circle.idToUserCircleData(bobCircleId);
 
-        ) = circle.idToUserCircleData(aliceCircleId);
-        (
-            ,
-            uint96 bobFundGoal,
-            ,
-            ,
-            ,
-            QQuestP2PCircle.CircleState bobState,
-            ,
-
-        ) = circle.idToUserCircleData(bobCircleId);
-
-        assertEq(uint(aliceState), uint(QQuestP2PCircle.CircleState.Redeemed));
-        assertEq(uint(bobState), uint(QQuestP2PCircle.CircleState.Redeemed));
+        assertEq(uint256(aliceState), uint256(QQuestP2PCircle.CircleState.Redeemed));
+        assertEq(uint256(bobState), uint256(QQuestP2PCircle.CircleState.Redeemed));
         assertEq(aliceFundGoal, 0);
         assertEq(bobFundGoal, 0);
 
@@ -786,9 +561,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         bytes32 fakeContributionId = keccak256("fake_contribution");
 
         vm.prank(charlie);
-        vm.expectRevert(
-            QQuestP2PCircle.QQuest__OnlyContributorCanAccess.selector
-        );
+        vm.expectRevert(QQuestP2PCircle.QQuest__OnlyContributorCanAccess.selector);
         circle.redeemContributions(fakeContributionId);
     }
 
@@ -804,38 +577,20 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint40 _paymentDueBy = _leadTimeDuration + _timestampForPayback;
         vm.startPrank(alice);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            _timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), _timestampForPayback, goalValue);
 
         vm.deal(alice, collateralAmount * 1 ether);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
 
         circle.createNewCircle{value: collateralAmount * collateralPrecision}(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            goalValue,
-            _deadlineForCircle,
-            _timestampForPayback,
-            _builderScore,
-            isUSDC
+            circle.ETH_PRICE_FEED_ADDRESS(), goalValue, _deadlineForCircle, _timestampForPayback, _builderScore, isUSDC
         );
         vm.stopPrank();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(alice, goalValue, _paymentDueBy, builderScore)
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValue, _paymentDueBy, builderScore));
 
-        _assertCircleData(
-            alice,
-            circleId,
-            goalValue,
-            _leadTimeDuration,
-            _paymentDueBy,
-            uint96(collateralAmount)
-        );
+        _assertCircleData(alice, circleId, goalValue, _leadTimeDuration, _paymentDueBy, uint96(collateralAmount));
     }
 
     function test_circleCreation_belowMinimumRequirements() public {
@@ -848,21 +603,12 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         vm.startPrank(alice);
         usdc.approve(address(circle), goalValue);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            _timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), _timestampForPayback, goalValue);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
         // vm.expectRevert(QQuestP2PCircle.QQuest__IneligibleForCircling.selector);
         circle.createNewCircle{value: collateralAmount * collateralPrecision}(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            goalValue,
-            _deadlineForCircle,
-            _timestampForPayback,
-            _builderScore,
-            isUSDC
+            circle.ETH_PRICE_FEED_ADDRESS(), goalValue, _deadlineForCircle, _timestampForPayback, _builderScore, isUSDC
         );
         vm.stopPrank();
     }
@@ -870,14 +616,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     function test_partialFundingScenario() public {
         // Create a circle
         testCreateNewCircle();
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Partial funding
         vm.startPrank(bob);
@@ -893,22 +632,14 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         circle.redeemCircleFund(circleId, true); // This should succeed as it's more than 50%
         vm.stopPrank();
 
-        (, , , , , QQuestP2PCircle.CircleState state, , ) = circle
-            .idToUserCircleData(circleId);
-        assertEq(uint(state), uint(QQuestP2PCircle.CircleState.Redeemed));
+        (,,,,, QQuestP2PCircle.CircleState state,,) = circle.idToUserCircleData(circleId);
+        assertEq(uint256(state), uint256(QQuestP2PCircle.CircleState.Redeemed));
     }
 
     function test_failPartialFunding_belowThreshold() public {
         // Create a circle
         testCreateNewCircle();
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Partial funding below 50% threshold
         vm.startPrank(bob);
@@ -921,9 +652,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
 
         // Try to redeem with insufficient partial funding
         vm.startPrank(alice);
-        vm.expectRevert(
-            QQuestP2PCircle.QQuest__CircleInsufficientPartialFilling.selector
-        );
+        vm.expectRevert(QQuestP2PCircle.QQuest__CircleInsufficientPartialFilling.selector);
         circle.redeemCircleFund(circleId, true); // This should fail
         vm.stopPrank();
     }
@@ -933,14 +662,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         testCreateNewCircle();
         testContributeToCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         // Complete the funding
         vm.startPrank(charlie);
@@ -967,14 +689,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     function test_failUnauthorizedRepaymentCheck() public {
         testCreateNewCircle();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                alice,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
-        );
+        bytes32 circleId = keccak256(abi.encodePacked(alice, goalValueToRaise, paymentDueBy, builderScore));
 
         vm.prank(bob); // Bob doesn't have DEFAULT_ADMIN_ROLE
         vm.expectRevert();
@@ -985,56 +700,31 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint96 goalValue = 4000; // 4000 USDC, within GUARDIAN threshold
 
         bool isUSDC = true;
-        bytes32 charlieDigest = membership.mintRequestHelper(
-            charlie,
-            membership.GUARDIAN_TOKEN_ID()
-        );
+        bytes32 charlieDigest = membership.mintRequestHelper(charlie, membership.GUARDIAN_TOKEN_ID());
         bytes memory signature = signSale(charlieDigest, trustedEntityPrivKey);
 
         vm.startPrank(charlie); // Charlie has GUARDIAN_TOKEN
-        membership.updateTierAndMintSoulBound(
-            membership.GUARDIAN_TOKEN_ID(),
-            signature
-        );
+        membership.updateTierAndMintSoulBound(membership.GUARDIAN_TOKEN_ID(), signature);
         usdc.approve(address(circle), goalValue);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), timestampForPayback, goalValue);
 
         vm.deal(charlie, collateralAmount * 1 ether);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
 
         circle.createNewCircle{value: collateralAmount * collateralPrecision}(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            goalValue,
-            deadlineForCircle,
-            timestampForPayback,
-            builderScore,
-            isUSDC
+            circle.ETH_PRICE_FEED_ADDRESS(), goalValue, deadlineForCircle, timestampForPayback, builderScore, isUSDC
         );
         vm.stopPrank();
 
-        bytes32 circleId = keccak256(
-            abi.encodePacked(charlie, goalValue, paymentDueBy, builderScore)
-        );
-        (
-            address creator,
-            uint96 fundGoalValue,
-            ,
-            ,
-            ,
-            QQuestP2PCircle.CircleState state,
-            ,
-
-        ) = circle.idToUserCircleData(circleId);
+        bytes32 circleId = keccak256(abi.encodePacked(charlie, goalValue, paymentDueBy, builderScore));
+        (address creator, uint96 fundGoalValue,,,, QQuestP2PCircle.CircleState state,,) =
+            circle.idToUserCircleData(circleId);
 
         assertEq(creator, charlie);
         assertEq(fundGoalValue, goalValue);
-        assertEq(uint(state), uint(QQuestP2PCircle.CircleState.Active));
+        assertEq(uint256(state), uint256(QQuestP2PCircle.CircleState.Active));
     }
 
     function test_failCircleCreation_exceedingGuardianThreshold() public {
@@ -1042,36 +732,21 @@ contract QQuestP2PCircleTest is Test, EIP712 {
 
         bool isUSDC = true;
 
-        bytes32 charlieDigest = membership.mintRequestHelper(
-            charlie,
-            membership.GUARDIAN_TOKEN_ID()
-        );
+        bytes32 charlieDigest = membership.mintRequestHelper(charlie, membership.GUARDIAN_TOKEN_ID());
         bytes memory signature = signSale(charlieDigest, trustedEntityPrivKey);
 
         vm.startPrank(charlie); // Charlie has GUARDIAN_TOKEN
-        membership.updateTierAndMintSoulBound(
-            membership.GUARDIAN_TOKEN_ID(),
-            signature
-        );
+        membership.updateTierAndMintSoulBound(membership.GUARDIAN_TOKEN_ID(), signature);
         usdc.approve(address(circle), goalValue);
 
-        uint256 collateralAmount = calculateCollateral(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            timestampForPayback,
-            goalValue
-        );
+        uint256 collateralAmount = calculateCollateral(circle.ETH_PRICE_FEED_ADDRESS(), timestampForPayback, goalValue);
 
         vm.deal(charlie, collateralAmount * 1 ether);
 
         uint32 collateralPrecision = uint32(1e18 - PRECISION);
         vm.expectRevert(QQuestP2PCircle.QQuest__InvalidParams.selector);
         circle.createNewCircle{value: collateralAmount * collateralPrecision}(
-            circle.ETH_PRICE_FEED_ADDRESS(),
-            goalValue,
-            deadlineForCircle,
-            timestampForPayback,
-            builderScore,
-            isUSDC
+            circle.ETH_PRICE_FEED_ADDRESS(), goalValue, deadlineForCircle, timestampForPayback, builderScore, isUSDC
         );
         vm.stopPrank();
     }
@@ -1081,38 +756,19 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint256 _timestampForPayback,
         uint256 _goalValueToRaise
     ) internal view returns (uint96 collateralAmount) {
-        (, int256 collateralPrice, , , ) = AggregatorV3Interface(
-            collateralPriceFeedAddress
-        ).latestRoundData();
+        (, int256 collateralPrice,,,) = AggregatorV3Interface(collateralPriceFeedAddress).latestRoundData();
 
-        uint256 someAmount = ((_goalValueToRaise * PRECISION) *
-            COLLATERAL_PRECISION) / uint256(collateralPrice);
+        uint256 someAmount = ((_goalValueToRaise * PRECISION) * COLLATERAL_PRECISION) / uint256(collateralPrice);
 
-        collateralAmount = _timestampForPayback > MONTHLY_DURATION
-            ? uint96(someAmount * 2)
-            : uint96(someAmount + (someAmount / 2));
+        collateralAmount =
+            _timestampForPayback > MONTHLY_DURATION ? uint96(someAmount * 2) : uint96(someAmount + (someAmount / 2));
     }
 
-    function mintRequestHelper(
-        address _toAddress,
-        uint256 newTokenId
-    ) public view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        membership.MINT_REQUEST_TYPE_HASH(),
-                        _toAddress,
-                        newTokenId
-                    )
-                )
-            );
+    function mintRequestHelper(address _toAddress, uint256 newTokenId) public view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(membership.MINT_REQUEST_TYPE_HASH(), _toAddress, newTokenId)));
     }
 
-    function signSale(
-        bytes32 digest,
-        uint256 privateKey
-    ) internal pure returns (bytes memory) {
+    function signSale(bytes32 digest, uint256 privateKey) internal pure returns (bytes memory) {
         // Simulate the signing using Foundry's vm.sign, which returns (v, r, s)
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
 
@@ -1136,7 +792,6 @@ contract QQuestP2PCircleTest is Test, EIP712 {
             uint96 collateral,
             QQuestP2PCircle.CircleState state,
             bool isRepaymentOnTime,
-
         ) = circle.idToUserCircleData(circleId);
 
         assertEq(creator, _creator);
@@ -1144,7 +799,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         assertEq(_leadTimeDuration, expectedLeadTimeDuration);
         assertEq(_paymentDueBy, expectedPaymentDueBy);
         assertEq(collateral, expectedCollateral);
-        assertEq(uint(state), uint(QQuestP2PCircle.CircleState.Active));
+        assertEq(uint256(state), uint256(QQuestP2PCircle.CircleState.Active));
         assertFalse(isRepaymentOnTime);
     }
 }

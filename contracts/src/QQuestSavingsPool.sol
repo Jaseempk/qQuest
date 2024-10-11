@@ -3,7 +3,8 @@
 pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AggregatorV3Interface} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
+import {AggregatorV3Interface} from
+    "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /**
  * @title QQuestSavingPool
@@ -25,8 +26,7 @@ contract QQuestSavingPool {
     error QQuest__SavingsPoolAlreadyClosedOrDoesntExist();
 
     // Special ETH address representation in the contract
-    address public constant ETH_ADDRESS =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     // Constants for time durations in seconds and precisions
     uint16 public constant CONTRIBUTION_VALUE_PRECISION = 1e3;
@@ -37,8 +37,7 @@ contract QQuestSavingPool {
     uint128 public constant PRICE_PRECISION = 1e5; // Precision for token price calculations
 
     // Mappings to track savings pool details and balances
-    mapping(bytes32 => mapping(address => SavingPoolDetails))
-        public idToSavingDetails; // Maps savings ID to pool details
+    mapping(bytes32 => mapping(address => SavingPoolDetails)) public idToSavingDetails; // Maps savings ID to pool details
     mapping(bytes32 => mapping(address => uint256)) public savingPoolBalance; // Maps savings ID to user balances
 
     // Enum for selecting saving intervals
@@ -63,24 +62,11 @@ contract QQuestSavingPool {
     }
 
     event GoalInitialised(
-        bool isEth,
-        address initialiser,
-        uint256 savingsGoal,
-        address tokenToBeSaved,
-        bytes32 savingsId
+        bool isEth, address initialiser, uint256 savingsGoal, address tokenToBeSaved, bytes32 savingsId
     );
-    event ContributionMade(
-        address caller,
-        uint256 contributionAmount,
-        bytes32 savingsId
-    );
+    event ContributionMade(address caller, uint256 contributionAmount, bytes32 savingsId);
 
-    event SavingPoolWithdrawn(
-        address poolOwner,
-        bytes32 savingsId,
-        address savingToken,
-        uint256 balanceWithdrawn
-    );
+    event SavingPoolWithdrawn(address poolOwner, bytes32 savingsId, address savingToken, uint256 balanceWithdrawn);
 
     /**
      * @notice Initializes a new saving pool and makes the first contribution
@@ -102,14 +88,7 @@ contract QQuestSavingPool {
         bool isEth = tokenToBeSaved == ETH_ADDRESS;
         bool isActive = true;
         //Generate a unique savings ID based on the user, block, and goal
-        bytes32 savingsId = keccak256(
-            abi.encodePacked(
-                msg.sender,
-                block.number,
-                intervalType,
-                goalForSaving
-            )
-        );
+        bytes32 savingsId = keccak256(abi.encodePacked(msg.sender, block.number, intervalType, goalForSaving));
         uint256 expectedExpiry;
         // Check if a pool with the same ID already exists and is active
         if (idToSavingDetails[savingsId][msg.sender].isActive == true) {
@@ -117,17 +96,13 @@ contract QQuestSavingPool {
         }
         // Calculate expiry based on the selected interval (daily, weekly, or monthly)
         if (intervalType == SavingInterval.Daily) {
-            expectedExpiry =
-                block.timestamp +
-                DAILY_DURATIONS *
-                totalPaymentCounts;
+            expectedExpiry = block.timestamp + DAILY_DURATIONS * totalPaymentCounts;
         } else {
             expectedExpiry = intervalType == SavingInterval.Monthly
                 ? block.timestamp + (MONTHLY_DURATION * totalPaymentCounts)
                 : block.timestamp + (WEEKLY_DURATIONS * totalPaymentCounts);
         } // Calculate how much needs to be contributed for each payment
-        uint256 tokenContributionValue = (goalForSaving *
-            CONTRIBUTION_VALUE_PRECISION) / totalPaymentCounts;
+        uint256 tokenContributionValue = (goalForSaving * CONTRIBUTION_VALUE_PRECISION) / totalPaymentCounts;
         // Initialize saving pool details and store in mapping
         idToSavingDetails[savingsId][msg.sender] = SavingPoolDetails(
             isActive,
@@ -142,17 +117,9 @@ contract QQuestSavingPool {
             savingTokenPriceFeedAddress
         );
 
-        emit GoalInitialised(
-            isEth,
-            msg.sender,
-            goalForSaving,
-            tokenToBeSaved,
-            savingsId
-        );
+        emit GoalInitialised(isEth, msg.sender, goalForSaving, tokenToBeSaved, savingsId);
         // Calculate the amount to contribute based on token values
-        uint256 amountToContribute = calculateSavintTokenAmountFromValue(
-            savingsId
-        );
+        uint256 amountToContribute = calculateSavintTokenAmountFromValue(savingsId);
         // Add the contribution to the saving pool balance
         savingPoolBalance[savingsId][msg.sender] += amountToContribute;
         // Check and transfer ETH or tokens to the contract
@@ -161,11 +128,7 @@ contract QQuestSavingPool {
                 revert QQuest__InvalidEthContribution();
             }
         } else {
-            IERC20(tokenToBeSaved).transferFrom(
-                msg.sender,
-                address(this),
-                amountToContribute
-            );
+            IERC20(tokenToBeSaved).transferFrom(msg.sender, address(this), amountToContribute);
         }
     }
 
@@ -175,8 +138,7 @@ contract QQuestSavingPool {
      * @param savingsId The unique identifier of the saving pool
      */
     function addSavingsContribution(bytes32 savingsId) public payable {
-        address savingsPoolOwner = idToSavingDetails[savingsId][msg.sender]
-            .poolOwner;
+        address savingsPoolOwner = idToSavingDetails[savingsId][msg.sender].poolOwner;
 
         // Ensure that only the pool owner can add contributions
         if (msg.sender != savingsPoolOwner) revert QQuest__OnlyOwnerCanAccess();
@@ -189,20 +151,14 @@ contract QQuestSavingPool {
         // Calculate current pool value in USD and check if goal is achieved
         uint256 currentSavingPoolValue = calculateSavingTokenValue(savingsId);
 
-        if (
-            (currentSavingPoolValue / POOL_VALUE_PRECISION) >=
-            idToSavingDetails[savingsId][msg.sender].goalForSaving
-        ) {
+        if ((currentSavingPoolValue / POOL_VALUE_PRECISION) >= idToSavingDetails[savingsId][msg.sender].goalForSaving) {
             revert QQuest__SavingGoalAlreadyAchieved();
         }
 
-        address tokenToBeSaved = idToSavingDetails[savingsId][msg.sender]
-            .tokenToBeSaved;
+        address tokenToBeSaved = idToSavingDetails[savingsId][msg.sender].tokenToBeSaved;
 
         // Determine how much to contribute
-        uint256 amountToContribute = calculateSavintTokenAmountFromValue(
-            savingsId
-        );
+        uint256 amountToContribute = calculateSavintTokenAmountFromValue(savingsId);
 
         emit ContributionMade(msg.sender, amountToContribute, savingsId);
         savingPoolBalance[savingsId][msg.sender] += amountToContribute;
@@ -212,11 +168,7 @@ contract QQuestSavingPool {
                 revert QQuest__InvalidEthContribution();
             }
         } else {
-            IERC20(tokenToBeSaved).transferFrom(
-                msg.sender,
-                address(this),
-                amountToContribute
-            );
+            IERC20(tokenToBeSaved).transferFrom(msg.sender, address(this), amountToContribute);
         }
     }
 
@@ -226,8 +178,7 @@ contract QQuestSavingPool {
      * @param savingsId The unique identifier of the saving pool
      */
     function withdraw(bytes32 savingsId) public {
-        address savingsPoolOwner = idToSavingDetails[savingsId][msg.sender]
-            .poolOwner;
+        address savingsPoolOwner = idToSavingDetails[savingsId][msg.sender].poolOwner;
         if (msg.sender != savingsPoolOwner) revert QQuest__OnlyOwnerCanAccess();
 
         if (idToSavingDetails[savingsId][msg.sender].isActive == false) {
@@ -238,10 +189,7 @@ contract QQuestSavingPool {
             revert QQuest__NothingToWihdraw();
         }
 
-        if (
-            idToSavingDetails[savingsId][msg.sender].expiryTimeStamp >
-            block.timestamp
-        ) {
+        if (idToSavingDetails[savingsId][msg.sender].expiryTimeStamp > block.timestamp) {
             revert QQuest__SavingsPoolNotExpiredYet();
         } //checks whether the saving pool is expired or not
 
@@ -249,27 +197,15 @@ contract QQuestSavingPool {
 
         uint256 balanceToWithdraw = savingPoolBalance[savingsId][msg.sender];
 
-        address tokenSaved = idToSavingDetails[savingsId][msg.sender]
-            .tokenToBeSaved;
+        address tokenSaved = idToSavingDetails[savingsId][msg.sender].tokenToBeSaved;
         idToSavingDetails[savingsId][msg.sender].isActive = false;
         savingPoolBalance[savingsId][msg.sender] = 0;
-        emit SavingPoolWithdrawn(
-            msg.sender,
-            savingsId,
-            tokenSaved,
-            balanceToWithdraw
-        );
+        emit SavingPoolWithdrawn(msg.sender, savingsId, tokenSaved, balanceToWithdraw);
         if (isEth) {
-            (bool success, ) = payable(msg.sender).call{
-                value: balanceToWithdraw * 1 ether
-            }("");
+            (bool success,) = payable(msg.sender).call{value: balanceToWithdraw * 1 ether}("");
             if (!success) revert QQuest__EthWithdrawalFailed();
         } else {
-            IERC20(tokenSaved).transferFrom(
-                address(this),
-                msg.sender,
-                balanceToWithdraw
-            );
+            IERC20(tokenSaved).transferFrom(address(this), msg.sender, balanceToWithdraw);
         }
     }
 
@@ -279,26 +215,16 @@ contract QQuestSavingPool {
      * @param savingsId The unique identifier of the saving pool
      * @return currentSavingPoolValue The current value of the saving pool in USD (scaled by POOL_VALUE_PRECISION)
      */
-    function calculateSavingTokenValue(
-        bytes32 savingsId
-    ) internal view returns (uint256 currentSavingPoolValue) {
-        address savingTokenPriceFeedAddress = idToSavingDetails[savingsId][
-            msg.sender
-        ].savingTokenPriceFeedAddy;
+    function calculateSavingTokenValue(bytes32 savingsId) internal view returns (uint256 currentSavingPoolValue) {
+        address savingTokenPriceFeedAddress = idToSavingDetails[savingsId][msg.sender].savingTokenPriceFeedAddy;
 
         // Get the latest price from Chainlink price feed
-        (, int256 currentSavingTokenPrice, , , ) = AggregatorV3Interface(
-            savingTokenPriceFeedAddress
-        ).latestRoundData();
+        (, int256 currentSavingTokenPrice,,,) = AggregatorV3Interface(savingTokenPriceFeedAddress).latestRoundData();
 
-        uint256 currentSavingPoolQuantity = savingPoolBalance[savingsId][
-            msg.sender
-        ];
+        uint256 currentSavingPoolQuantity = savingPoolBalance[savingsId][msg.sender];
 
         // Calculate the current value of the saving pool
-        currentSavingPoolValue =
-            uint256(currentSavingTokenPrice) *
-            currentSavingPoolQuantity;
+        currentSavingPoolValue = uint256(currentSavingTokenPrice) * currentSavingPoolQuantity;
     }
 
     /**
@@ -307,24 +233,18 @@ contract QQuestSavingPool {
      * @param savingsId The unique identifier of the saving pool
      * @return tokenAmountToContribute The amount of tokens to contribute
      */
-    function calculateSavintTokenAmountFromValue(
-        bytes32 savingsId
-    ) internal view returns (uint256 tokenAmountToContribute) {
-        uint256 contributionTokenValue = idToSavingDetails[savingsId][
-            msg.sender
-        ].tokenContributionValue;
+    function calculateSavintTokenAmountFromValue(bytes32 savingsId)
+        internal
+        view
+        returns (uint256 tokenAmountToContribute)
+    {
+        uint256 contributionTokenValue = idToSavingDetails[savingsId][msg.sender].tokenContributionValue;
 
-        address savingTokenPriceFeedAddress = idToSavingDetails[savingsId][
-            msg.sender
-        ].savingTokenPriceFeedAddy;
+        address savingTokenPriceFeedAddress = idToSavingDetails[savingsId][msg.sender].savingTokenPriceFeedAddy;
         // Get the latest price from Chainlink price feed
-        (, int256 currentSavingTokenPrice, , , ) = AggregatorV3Interface(
-            savingTokenPriceFeedAddress
-        ).latestRoundData();
+        (, int256 currentSavingTokenPrice,,,) = AggregatorV3Interface(savingTokenPriceFeedAddress).latestRoundData();
 
         // Calculate the token amount to contribute based on the current price
-        tokenAmountToContribute =
-            (contributionTokenValue * PRICE_PRECISION) /
-            uint256(currentSavingTokenPrice);
+        tokenAmountToContribute = (contributionTokenValue * PRICE_PRECISION) / uint256(currentSavingTokenPrice);
     }
 }

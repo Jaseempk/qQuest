@@ -1,6 +1,7 @@
 //SPDX-License-Identifier:MIT
 
 pragma solidity 0.8.24;
+
 import {QQuestP2PCircleMembership} from "./QQuestP2PCircleMembership.sol";
 
 contract QQuestReputationManagment {
@@ -21,15 +22,12 @@ contract QQuestReputationManagment {
         membershipContract = QQuestP2PCircleMembership(qQmembership);
     }
 
-    function updateUserReputation(
-        uint16 numberOfContributions,
-        uint16 numberOfRepayments
-    ) internal returns (uint16) {
-        if (numberOfContributions == 0 && numberOfRepayments == 0)
+    function updateUserReputation(uint16 numberOfContributions, uint16 numberOfRepayments) internal returns (uint16) {
+        if (numberOfContributions == 0 && numberOfRepayments == 0) {
             revert QQ__InvalidParams();
-        uint16 userReputations = (numberOfContributions *
-            CONTRIBUTION_WEIGHTAGE) +
-            (numberOfRepayments * REPAYMENTS_WEIGHTAGE);
+        }
+        uint16 userReputations =
+            (numberOfContributions * CONTRIBUTION_WEIGHTAGE) + (numberOfRepayments * REPAYMENTS_WEIGHTAGE);
 
         userReputation[msg.sender] = userReputations;
 
@@ -37,29 +35,16 @@ contract QQuestReputationManagment {
     }
 
     function slashUserReputation(address user) internal {
-        if (
-            membershipContract.balanceOf(
-                user,
-                membershipContract.GUARDIAN_TOKEN_ID()
-            ) == 1
-        ) {
-            uint16 amountToSlash = (userReputation[user] *
-                guardianSlashingThreshold) / 100;
+        if (membershipContract.balanceOf(user, membershipContract.GUARDIAN_TOKEN_ID()) == 1) {
+            uint16 amountToSlash = (userReputation[user] * guardianSlashingThreshold) / 100;
             userReputation[user] -= amountToSlash;
             return;
-        } else if (
-            membershipContract.balanceOf(
-                user,
-                membershipContract.CONFIDANT_TOKEN_ID()
-            ) == 1
-        ) {
-            uint16 amountToSlash = (userReputation[user] *
-                confidantSlashingThreshold) / 100;
+        } else if (membershipContract.balanceOf(user, membershipContract.CONFIDANT_TOKEN_ID()) == 1) {
+            uint16 amountToSlash = (userReputation[user] * confidantSlashingThreshold) / 100;
             userReputation[user] -= amountToSlash;
             return;
         } else {
-            uint16 amountToSlash = (userReputation[user] *
-                allySlashingThreshold) / 100;
+            uint16 amountToSlash = (userReputation[user] * allySlashingThreshold) / 100;
             userReputation[user] -= amountToSlash;
         }
     }
