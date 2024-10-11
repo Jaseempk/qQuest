@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.24;
 import {QQuestP2PCircleMembership} from "./QQuestP2PCircleMembership.sol";
-import {console} from "forge-std/console.sol";
 
 contract QQuestReputationManagment {
     //Error
@@ -66,7 +65,6 @@ contract QQuestReputationManagment {
     }
 
     function getUserReputation(address user) public view returns (uint16) {
-        console.log("userReputationsss:", userReputation[user]);
         return userReputation[user];
     }
 }

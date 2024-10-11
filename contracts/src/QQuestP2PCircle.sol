@@ -18,6 +18,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__InvalidParams();
     error QQuest__InvalidParamss();
     error QQuest__InactiveCircle();
+    error QQuest__InvalidCircleId();
     error QQuest__AlreadyPastDueDate();
     error QQuest__CircleDurationOver();
     error QQuest__NoContributionFound();
@@ -129,6 +130,22 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint256 timeStamp
     );
 
+    modifier notBanned() {
+        if (isUserBanned[msg.sender])
+            revert QQuest__UserAlreadyBannedFromPlatform();
+        _;
+    }
+
+    modifier validEligibility(uint16 builderScore) {
+        if (
+            builderScore < MIN_BUILDER_SCORE &&
+            userToContributionCount[msg.sender] < MIN_CONT_COUNT
+        ) {
+            revert QQuest__IneligibleForCircling();
+        }
+        _;
+    }
+
     constructor(
         uint256 allyThreshold,
         uint guardianThreshold,
@@ -154,55 +171,24 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint40 timestampForPayback,
         uint16 builderScore,
         bool isUSDC
-    ) public payable {
+    ) public payable notBanned validEligibility(builderScore) {
         uint40 leadTimeDuration = uint40(block.timestamp + deadlineForCircle);
         uint40 paymentDueBy = leadTimeDuration + timestampForPayback;
+        validateMembershipAndGoal(goalValueToRaise);
+
         uint96 collateralAmount = calculateCollateral(
             collateralPriceFeedAddress,
             timestampForPayback,
             goalValueToRaise
         );
-        uint32 collateralPrecision = uint32(1e18 - PRECISION);
+        validateCollateral(collateralAmount);
 
-        if (isUserBanned[msg.sender])
-            revert QQuest__UserAlreadyBannedFromPlatform();
-        if (
-            builderScore < MIN_BUILDER_SCORE &&
-            userToContributionCount[msg.sender] < MIN_CONT_COUNT
-        ) {
-            revert QQuest__IneligibleForCircling();
-        }
-
-        if (
-            membershipContract.balanceOf(
-                msg.sender,
-                membershipContract.GUARDIAN_TOKEN_ID()
-            ) == 0
-        ) {
-            if (
-                membershipContract.balanceOf(
-                    msg.sender,
-                    membershipContract.ALLY_TOKEN_ID()
-                ) ==
-                0 ||
-                (goalValueToRaise > allyGoalValueThreshold)
-            ) revert QQuest__InvalidParamss();
-        } else {
-            if (goalValueToRaise > guardianGoalValueThreshold)
-                revert QQuest__InvalidParams();
-        }
-        if (msg.value < collateralAmount * collateralPrecision) {
-            revert QQuest_InsufficientCollateral();
-        }
-        address circleCreator = msg.sender;
-
-        bytes32 circleId = keccak256(
-            abi.encodePacked(
-                circleCreator,
-                goalValueToRaise,
-                paymentDueBy,
-                builderScore
-            )
+        bytes32 circleId = createCircleId(
+            msg.sender,
+            goalValueToRaise,
+            deadlineForCircle,
+            timestampForPayback,
+            builderScore
         );
 
         idToUserCircleData[circleId] = CircleData(
@@ -238,6 +224,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
 
         if (isUserBanned[msg.sender])
             revert QQuest__UserAlreadyBannedFromPlatform();
+        if (circle.creator == address(0)) revert QQuest__InvalidCircleId();
         if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
 
         if (block.timestamp > circle.leadTimeDuration)
@@ -455,6 +442,10 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         }
     }
 
+    function getUserReputations(address user) public view returns (uint16) {
+        return getUserReputation(user);
+    }
+
     function calculateCollateral(
         address collateralPriceFeedAddress,
         uint256 _timestampForPayback,
@@ -470,6 +461,53 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         collateralAmount = _timestampForPayback > MONTHLY_DURATION
             ? uint96(cAssetEqGoal * 2)
             : uint96(cAssetEqGoal + (cAssetEqGoal / 2));
+    }
+
+    function validateMembershipAndGoal(uint96 goalValueToRaise) internal view {
+        bool isGuardian = membershipContract.balanceOf(
+            msg.sender,
+            membershipContract.GUARDIAN_TOKEN_ID()
+        ) > 0;
+        bool isAlly = membershipContract.balanceOf(
+            msg.sender,
+            membershipContract.ALLY_TOKEN_ID()
+        ) > 0;
+
+        if (isGuardian) {
+            if (goalValueToRaise > guardianGoalValueThreshold)
+                revert QQuest__InvalidParams();
+        } else {
+            if (!isAlly || goalValueToRaise > allyGoalValueThreshold)
+                revert QQuest__InvalidParams();
+        }
+    }
+
+    function validateCollateral(uint96 collateralAmount) internal view {
+        uint256 requiredCollateral = (uint256(collateralAmount) *
+            (1e18 - PRECISION)) / 1e18;
+        if (msg.value < requiredCollateral)
+            revert QQuest__InsufficientCollateral();
+    }
+
+    function createCircleId(
+        address creator,
+        uint96 goalValueToRaise,
+        uint40 deadlineForCircle,
+        uint40 timestampForPayback,
+        uint16 builderScore
+    ) internal view returns (bytes32) {
+        uint40 paymentDueBy = uint40(
+            block.timestamp + deadlineForCircle + timestampForPayback
+        );
+        return
+            keccak256(
+                abi.encodePacked(
+                    creator,
+                    goalValueToRaise,
+                    paymentDueBy,
+                    builderScore
+                )
+            );
     }
 
     function _killCircle(bytes32 circleId) internal {
