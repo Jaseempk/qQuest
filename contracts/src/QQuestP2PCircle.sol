@@ -9,6 +9,11 @@ import {Address} from "lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {QQuestP2PCircleMembership} from "./QQuestP2PCircleMembership.sol";
 import {QQuestReputationManagment} from "./QQuestReputationManagment.sol";
 
+/**
+ * @title QQuestP2PCircle
+ * @dev A decentralized peer-to-peer funding platform with reputation management and membership tiers.
+ * @notice This contract allows users to create funding circles, contribute funds, and manage repayments.
+ */
 contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     using Address for address;
     //Error
@@ -18,8 +23,10 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__PenalisedUser();
     error QQuest__InvalidParams();
     error QQuest__InvalidParamss();
+    error QQuest__ZeroFeeRevenue();
     error QQuest__InactiveCircle();
     error QQuest__InvalidCircleId();
+    error QQuest__AssetNonExistent();
     error QQuest__AlreadyPastDueDate();
     error QQuest__CircleDurationOver();
     error QQuest__NoContributionFound();
@@ -37,6 +44,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__CantRedeemWhenCircleIsActive();
     error QQuest__UserAlreadyBannedFromPlatform();
     error QQuest__CircleInsufficientPartialFilling();
+    error QQuest__FeeRevenueRedemptionOnlyQuarterly();
 
     address public immutable i_usdcAddress =
         0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -55,12 +63,14 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint128 public constant MAX_DUE_DURATION = 60 days; // Two Months in seconds
     uint128 public constant MAX_LEAD_DURATIONS = 14 days; // Two Weeks in seconds
     uint128 public constant MONTHLY_DURATION = 30 days; // Monthly in seconds
+    uint128 public constant QUARTERLY_TIME_DURATIONS = 120 days;
 
     uint96 public feePercentValue;
     uint256 public allyGoalValueThreshold;
     uint256 public guardianGoalValueThreshold;
     uint256 public totalFeeUsdcCollected;
     uint256 public totalFeeUsdtCollected;
+    uint256 public startOfPool;
 
     mapping(address user => bool isBanned) public isUserBanned;
     mapping(bytes32 contributionId => ContributionDeets)
@@ -164,6 +174,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         _;
     }
 
+    /**
+     * @dev Constructor to initialize the QQuestP2PCircle contract
+     * @param allyThreshold The threshold value for Ally tier
+     * @param guardianThreshold The threshold value for Guardian tier
+     * @param _feePercentValue The fee percentage for the platform
+     * @param someMembership Address of the QQuestP2PCircleMembership contract
+     */
     constructor(
         uint256 allyThreshold,
         uint256 guardianThreshold,
@@ -173,7 +190,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         if (allyThreshold == 0 || guardianThreshold == 0) {
             revert QQuest__InvalidThresholdValue();
         }
-
+        startOfPool = block.timestamp;
         feePercentValue = _feePercentValue;
         allyGoalValueThreshold = allyThreshold;
         guardianGoalValueThreshold = guardianThreshold;
@@ -183,6 +200,16 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
+    /**
+     * @notice Creates a new lending circle
+     * @dev Only non-banned users with valid eligibility can create a circle
+     * @param collateralPriceFeedAddress Address of the price feed for collateral
+     * @param goalValueToRaise The target amount to raise in the circle
+     * @param deadlineForCircle The duration for which the circle will accept contributions
+     * @param timestampForPayback The duration within which the loan should be repaid
+     * @param builderScore The score of the circle creator
+     * @param isUSDC Boolean indicating if the circle uses USDC (true) or USDT (false)
+     */
     function createNewCircle(
         address collateralPriceFeedAddress,
         uint96 goalValueToRaise,
@@ -233,6 +260,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         idToCircleAmountLeftToRaise[circleId] = int96(goalValueToRaise);
     }
 
+    /**
+     * @notice Allows users to contribute to an existing circle
+     * @dev Only non-banned users can contribute
+     * @param builderScore The score of the contributor
+     * @param circleId The unique identifier of the circle
+     * @param amountToContribute The amount the user wants to contribute
+     */
     function contributeToCircle(
         uint256 builderScore,
         bytes32 circleId,
@@ -296,6 +330,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         );
     }
 
+    /**
+     * @notice Allows the circle creator to redeem the raised funds
+     * @dev Only the circle creator can redeem funds
+     * @param circleId The unique identifier of the circle
+     * @param isReadyToRedeem Boolean indicating if the creator wants to redeem partially filled circles
+     */
+
     function redeemCircleFund(
         bytes32 circleId,
         bool isReadyToRedeem
@@ -340,6 +381,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         );
     }
 
+    /**
+     * @notice Allows the circle creator to pay back the borrowed funds
+     * @dev Only the circle creator can pay back funds
+     * @param circleId The unique identifier of the circle
+     */
     function paybackCircledFund(bytes32 circleId) public notBanned {
         CircleData memory circle = idToUserCircleData[circleId];
 
@@ -379,6 +425,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         token.transfer(address(this), (circle.fundGoalValue + feeAmount));
     }
 
+    /**
+     * @notice Allows the circle creator to unlock their collateral after successful repayment
+     * @dev Only the circle creator can unlock collateral
+     * @param circleId The unique identifier of the circle
+     */
     function unlockCollateral(bytes32 circleId) public notBanned {
         CircleData memory circle = idToUserCircleData[circleId];
 
@@ -398,6 +449,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         if (!success) revert QQuest__UnlockFailed();
     }
 
+    /**
+     * @notice Allows contributors to redeem their contributions after the circle's due period
+     * @dev Only the original contributor can redeem their contribution
+     * @param contributionId The unique identifier of the contribution
+     */
     function redeemContributions(bytes32 contributionId) public {
         ContributionDeets memory contributionDeets = idToContributionDeets[
             contributionId
@@ -432,6 +488,12 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         );
     }
 
+    /**
+     * @notice Checks if a user has paid back their loan on time
+     * @dev This function is private and used internally
+     * @param circleId The unique identifier of the circle
+     * @return haveUserPaidBack Boolean indicating if the user paid back on time
+     */
     function haveUserPaidBackOnTime(
         bytes32 circleId
     ) private view returns (bool haveUserPaidBack) {
@@ -442,6 +504,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         haveUserPaidBack = idToUserCircleData[circleId].isRepaymentOnTime;
     }
 
+    /**
+     * @notice Checks user repayment status and updates reputation
+     * @dev Only callable by admin
+     * @param circleId The unique identifier of the circle
+     */
     function checkUserRepaymentAndUpdateReputation(
         bytes32 circleId
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -458,6 +525,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         }
     }
 
+    /**
+     * @notice Bans a user from the platform
+     * @dev Only callable by admin
+     * @param user Address of the user to be banned
+     */
     function banUser(address user) public onlyRole(DEFAULT_ADMIN_ROLE) {
         if (userToFailedRepaymentCount[user] <= 1) {
             revert QQuest__UserCantBePenalised();
@@ -465,6 +537,12 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         isUserBanned[user] = true;
     }
 
+    /**
+     * @notice Sets new threshold values for Ally and Guardian tiers
+     * @dev Only callable by admin
+     * @param allyNewThreshold New threshold for Ally tier
+     * @param guardianNewThreshold New threshold for Guardian tier
+     */
     function setSetCircleGoalThreshold(
         uint256 allyNewThreshold,
         uint256 guardianNewThreshold
@@ -482,10 +560,50 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         }
     }
 
+    /**
+     * @notice Withdraws accumulated fee revenue
+     * @dev Only callable by admin, and only after a quarterly period
+     * @param asset Address of the asset (USDC or USDT) to withdraw
+     * @param destination Address to send the withdrawn fees
+     */
+    function withdrawFeeRevenue(
+        address asset,
+        address destination
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if ((block.timestamp) < uint256(startOfPool + QUARTERLY_TIME_DURATIONS))
+            revert QQuest__FeeRevenueRedemptionOnlyQuarterly();
+        if (asset != i_usdcAddress && asset != i_usdtAddress)
+            revert QQuest__AssetNonExistent();
+
+        if (totalFeeUsdcCollected == 0 && totalFeeUsdtCollected == 0)
+            revert QQuest__ZeroFeeRevenue();
+        uint256 usdAmount = asset == i_usdcAddress
+            ? totalFeeUsdcCollected
+            : totalFeeUsdtCollected;
+        totalFeeUsdcCollected = 0;
+        totalFeeUsdtCollected = 0;
+        startOfPool = block.timestamp;
+
+        IERC20(asset).transferFrom(address(this), destination, usdAmount);
+    }
+
+    /**
+     * @notice Retrieves the reputation score of a user
+     * @param user Address of the user
+     * @return uint16 Reputation score of the user
+     */
     function getUserReputations(address user) public view returns (uint16) {
         return getUserReputation(user);
     }
 
+    /**
+     * @notice Calculates the required collateral amount for a circle
+     * @dev Internal function used during circle creation
+     * @param collateralPriceFeedAddress Address of the price feed for collateral
+     * @param _timestampForPayback Duration for loan repayment
+     * @param _goalValueToRaise Target amount to be raised
+     * @return collateralAmount Amount of collateral required
+     */
     function calculateCollateral(
         address collateralPriceFeedAddress,
         uint256 _timestampForPayback,
@@ -503,6 +621,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             : uint96(cAssetEqGoal + (cAssetEqGoal / 2));
     }
 
+    /**
+     * @notice Validates user's membership tier and goal amount
+     * @dev Internal function used during circle creation
+     * @param goalValueToRaise Target amount to be raised
+     */
     function validateMembershipAndGoal(uint96 goalValueToRaise) internal view {
         bool isGuardian = membershipContract.balanceOf(
             msg.sender,
@@ -524,6 +647,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         }
     }
 
+    /**
+     * @notice Validates the provided collateral amount
+     * @dev Internal function used during circle creation
+     * @param collateralAmount Amount of collateral provided
+     */
     function validateCollateral(uint96 collateralAmount) internal view {
         uint256 requiredCollateral = (uint256(collateralAmount) *
             (1e18 - PRECISION)) / 1e18;
@@ -532,6 +660,16 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         }
     }
 
+    /**
+     * @notice Creates a unique identifier for a circle
+     * @dev Internal function used during circle creation
+     * @param creator Address of the circle creator
+     * @param goalValueToRaise Target amount to be raised
+     * @param deadlineForCircle Duration for which the circle will accept contributions
+     * @param timestampForPayback Duration within which the loan should be repaid
+     * @param builderScore Score of the circle creator
+     * @return bytes32 Unique identifier for the circle
+     */
     function createCircleId(
         address creator,
         uint96 goalValueToRaise,
@@ -553,12 +691,25 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             );
     }
 
+    /**
+     * @notice Marks a circle as killed (inactive)
+     * @dev Internal function used when a circle fails to meet its goal
+     * @param circleId Unique identifier of the circle
+     */
     function _killCircle(bytes32 circleId) internal {
         idToUserCircleData[circleId].fundGoalValue = 0;
         idToUserCircleData[circleId].state = CircleState.Killed;
         idToCircleAmountLeftToRaise[circleId] = 0;
     }
 
+    /**
+     * @notice Processes the redemption of a circle's funds
+     * @dev Internal function used when a circle successfully meets its goal
+     * @param circleId Unique identifier of the circle
+     * @param isUsdc Boolean indicating if the circle uses USDC (true) or USDT (false)
+     * @param creator Address of the circle creator
+     * @param amount Amount to be redeemed
+     */
     function _redeemCircle(
         bytes32 circleId,
         bool isUsdc,
