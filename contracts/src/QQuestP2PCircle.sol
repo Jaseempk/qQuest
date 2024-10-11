@@ -59,6 +59,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint96 public feePercentValue;
     uint256 public allyGoalValueThreshold;
     uint256 public guardianGoalValueThreshold;
+    uint256 public totalFeeUsdcCollected;
+    uint256 public totalFeeUsdtCollected;
 
     mapping(address user => bool isBanned) public isUserBanned;
     mapping(bytes32 contributionId => ContributionDeets)
@@ -355,7 +357,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             );
             return;
         }
-        uint96 feeAmount = (circle.fundGoalValue * feePercentValue) / 1000;
+        uint96 feeAmount = ((circle.fundGoalValue * feePercentValue) / 1000) +
+            1;
         userToRepaymentCount[msg.sender] += 1;
 
         idToUserCircleData[circleId].isRepaymentOnTime = true;

@@ -1,109 +1,101 @@
 # qQuest Protocol - Smart Contract Documentation
 
-qQuest is a decentralized platform that facilitates zero-interest savings, community-driven lending circles, and reputation-based memberships using Ethereum smart contracts. This protocol enables users to create personalized savings pools, join peer-to-peer lending circles, and maintain their reputation based on contributions and repayments.
+qQuest is a decentralized platform aimed at providing a socially trusted, reputation-based P2P funding and savings system. It includes several contracts for reputation management, membership, savings pools, and circle interactions.
 
-This documentation covers the contracts that form the core of qQuest, namely the ReputationManagment, QQuestP2PCircleMembership, and QQuestSavingPool contracts.
+## Overview of Contracts
 
-## Table of Contents
+### 1. Core Circle Contract (QQuestP2PCircle.sol)
 
-1. [Reputation Management Contract](#reputation-management-contract)
-2. [Circle Membership Contract](#circle-membership-contract)
-3. [Savings Pool Contract](#savings-pool-contract)
-4. [Installation](#installation)
-5. [License](#license)
+This contract governs the core functionality of qQuest's peer-to-peer funding circles, which are formed based on social trust, reputation, and tiered memberships.
 
-## Reputation Management Contract
+#### Key Features:
 
-**Contract Name:** QQuestReputationManagment.sol
+- Funding Circle Creation: Users can create a funding circle, setting rules on participation and contributions.
+- Contribution and Repayment Mechanism: The circle members contribute and withdraw funds, while repayment is tracked to ensure proper circle health.
+- Tier-Based Access: Users' roles and privileges are tied to their membership tier (Ally, Confidant, Guardian).
+- Dynamic Participation: Participants can be added or removed, and contribution schedules are flexible to adapt to various use cases.
 
-This contract manages the reputation system within the qQuest ecosystem. Reputation points are essential as they are used to determine a user's trustworthiness in the platform, especially when participating in lending circles.
+#### Core Methods:
 
-### Key Features:
+- `createCircle()`: Initiates a new funding circle.
+- `contributeToCircle()`: Allows members to contribute funds.
+- `withdrawFromCircle()`: Facilitates withdrawals from the circle pool.
+- `repayLoan()`: Records repayments for borrowed funds.
+- `updateCircleStatus()`: Monitors the status of the circle, determining if it's healthy or needs adjustments.
 
-- **Reputation Calculation:** The user's reputation is computed based on two weighted factors:
-  - Contributions (40% weight)
-  - Repayments (60% weight)
-- **Dynamic Slashing:** Users can have their reputation reduced (slashed) based on their tier within the circle membership:
-  - Ally: 5% slashing
-  - Confidant: 10% slashing
-  - Guardian: 15% slashing
+### 2. Reputation Management Contract (QQuestReputationManagment.sol)
 
-### Key Functions:
+This contract is responsible for tracking and updating the reputation of each user, which influences their access to higher tiers and circle participation.
 
-- `updateUserReputation()`:
-  - Updates the reputation of a user based on the number of contributions and repayments.
-  - Weights are applied accordingly to generate a score.
-- `slashUserReputation()`:
-  - Dynamically reduces (slashes) the user's reputation based on their membership tier.
-  - Called when certain conditions (e.g., missed repayments) are met.
-- `getUserReputation()`:
-  - Returns the reputation score for a given user.
+#### Key Features:
 
-## Circle Membership Contract
+- Reputation Calculation: Reputation is calculated based on the user's contributions and repayments. A weighted formula (60% for repayments, 40% for contributions) is used to compute this.
+- Slashing Mechanism: If a user defaults on their obligations, their reputation can be "slashed," reducing their ability to participate in certain circles or tiers.
+- Tied to Membership Tiers: Users holding higher-tier memberships (Confidant, Guardian) experience different slashing thresholds.
 
-**Contract Name:** QQuestP2PCircleMembership.sol
+#### Core Methods:
 
-This contract handles the issuance and management of soul-bound NFTs that represent membership tiers in the qQuest lending circles. These NFTs are not transferable and represent the user's standing within the community.
+- `updateUserReputation(uint16 contributions, uint16 repayments)`: Updates the reputation score based on user activity.
+- `slashUserReputation(address user)`: Decreases a user's reputation in case of default.
+- `getUserReputation(address user)`: Returns the current reputation score of a user.
 
-### Key Features:
+### 3. Membership Contract (QQuestP2PCircleMembership.sol)
 
-- **Membership Tiers:** Three tiers of membership exist within qQuest, represented by soul-bound NFTs:
-  - Ally
-  - Confidant
-  - Guardian
-- **Minimum Builder Score:** A minimum builder score (set to 25 by default) is required for users to be granted access to the system.
-- **Soul-Bound Tokens:** These NFTs are non-transferable, meaning users cannot move them between wallets. Additionally, any attempt to interact with non-soul-bound features like approvals or transfers will revert the transaction.
+The membership contract manages the issuance and control of tiered NFTs (Ally, Confidant, Guardian), which represent a user's standing and access level in the qQuest ecosystem. These NFTs are non-transferable (soulbound) and can only be upgraded or burned.
 
-### Key Functions:
+#### Key Features:
 
-- `createUserAccount()`:
-  - Allows a user to create an account and mint an Ally NFT, provided they meet the minimum builder score.
-  - Verifies the signature from a trusted entity to ensure the legitimacy of the account creation.
-- `updateTierAndMintSoulBound()`:
-  - Users can upgrade their membership by minting a higher-tier NFT (either Confidant or Guardian) based on the conditions provided.
-  - Similar to account creation, a trusted entity's signature is required for tier upgrades.
-- `burnNFT()`:
-  - The contract admin can burn a user's membership NFT if required (e.g., account termination).
-- **Reverts:**
-  - Disallows any transfer-related functions (like `safeTransferFrom` or `setApprovalForAll`) since these NFTs are soul-bound.
+- Soulbound NFTs: Users are assigned a membership tier based on their Builder Score and reputation. The NFTs cannot be transferred between wallets, ensuring that reputation is bound to the individual.
+- Tier Progression: Users can upgrade their tier from Ally to Confidant or Guardian by fulfilling certain criteria.
+- Trusted Entity Verification: The contract leverages a trusted entity (off-chain service or DAO) to validate requests for minting and tier upgrades.
 
-## Savings Pool Contract
+#### Core Methods:
 
-**Contract Name:** QQuestSavingPool.sol
+- `createUserAccount(uint256 builderScore, bytes signature)`: Creates an account and assigns the Ally NFT.
+- `updateTierAndMintSoulBound(uint256 newTokenId, bytes signature)`: Upgrades the user's tier to Confidant or Guardian based on validation.
+- `burnNFT(address user, uint256 tokenId)`: Allows the admin to burn (invalidate) a user's membership NFT.
 
-The savings pool contract allows users to create and contribute to savings pools with customizable goals, intervals, and token types (both ETH and ERC20). Users can choose between daily, weekly, or monthly contribution intervals.
+#### Events:
 
-### Key Features:
+- `UserTierUpgraded()`: Triggered when a user's tier is upgraded.
+- `UserAccoutCreated()`: Triggered when a new user account is created.
 
-- **Flexible Intervals:** Users can choose between daily, weekly, or monthly contribution schedules.
-- **ETH and ERC20 Support:** Pools can be created using ETH or any ERC20 token.
-- **Custom Goals:** Users define a savings goal, and the contract manages contributions until the goal is met.
-- **Automated Withdrawals:** Upon reaching the goal or expiration of the savings pool, users can withdraw their savings.
+### 4. Savings Pool Contract (QQuestSavingPool.sol)
 
-### Key Functions:
+This contract allows users to set up savings pools with customizable intervals (daily, weekly, monthly) and track contributions toward their saving goals. The pools can accept ETH or ERC20 tokens and utilize Chainlink price oracles to track token value.
 
-- `initialiseSavingPoolAndSaving()`:
-  - Creates a new savings pool and automatically makes the first contribution.
-  - A unique savings ID is generated for each pool, and pool details are stored on-chain.
-- `addSavingsContribution()`:
-  - Adds a new contribution to an existing savings pool.
-  - If the user is contributing ETH, the value must match the contribution requirement for that interval.
-- `withdrawFromSavingPool()`:
-  - Allows the pool owner to withdraw the balance from the pool once the goal has been met or the pool has expired.
-- `calculateSavingTokenValue()` & `calculateSavintTokenAmountFromValue()`:
-  - These helper functions calculate the value of the savings pool using Chainlink price feeds, allowing the contract to support both ETH and ERC20 tokens.
+#### Key Features:
 
-# qQuest Protocol - Smart Contract Documentation
+- Flexible Saving Goals: Users define their saving goals and make contributions over time based on the interval they select.
+- Supports ETH and ERC20 Tokens: Pools can be denominated in ETH or any ERC20 token, with Chainlink oracles used for token price data.
+- Contribution Schedules: Users contribute regularly based on the interval they choose (daily, weekly, monthly).
+- Automated Withdrawals: Upon reaching the savings goal or expiry of the pool, users can withdraw their contributions.
+- Precision Tracking: The contract ensures precise handling of contributions and balances through defined constants (e.g., contribution precision, pool value precision).
 
-## Installation
+#### Core Methods:
 
-To deploy and interact with these contracts using Foundry, follow these steps:
+- `initialiseSavingPoolAndSaving(uint256 goal, address token, SavingInterval interval, uint8 paymentCount, address priceFeed)`: Initializes a new savings pool.
+- `addSavingsContribution(bytes32 savingsId)`: Adds a contribution to the savings pool.
+- `calculateSavingTokenValue(bytes32 savingsId)`: Computes the current value of the tokens saved.
+- `withdrawSavings(bytes32 savingsId)`: Allows the user to withdraw their savings upon completion of the goal or expiry of the pool.
+
+#### Events:
+
+- `GoalInitialised()`: Triggered when a savings goal is initialized.
+- `ContributionMade()`: Triggered each time a contribution is made.
+- `SavingPoolWithdrawn()`: Triggered when a user withdraws their savings.
+
+## Access Control
+
+Several of the contracts use AccessControl to enforce permission management, ensuring that only trusted entities (admin or authorized contracts) can perform certain actions such as minting NFTs, updating trusted entities, or burning tokens.
+
+## Installation and Setup
 
 1. Clone the repository:
 
    ```bash
-   git clone <repository_url>
-   cd qQuestContracts
+   git clone <repository-url>
+   cd qquest-contracts
    ```
 
 2. Install Foundry:
@@ -111,8 +103,9 @@ To deploy and interact with these contracts using Foundry, follow these steps:
 
    ```bash
    curl -L https://foundry.paradigm.xyz | bash
-   foundryup
    ```
+
+   Then, run `foundryup` to install the latest version.
 
 3. Install dependencies:
 
@@ -132,28 +125,35 @@ To deploy and interact with these contracts using Foundry, follow these steps:
    forge test
    ```
 
-6. Deploy the contracts (ensure your environment is configured with a supported Ethereum provider):
-
+6. Deploy the contracts (replace `<network>` with your desired network, e.g., `mainnet`, `goerli`):
    ```bash
-   forge create --rpc-url <your_rpc_url> --private-key <your_private_key> src/QQuestReputationManagment.sol:QQuestReputationManagment
-   forge create --rpc-url <your_rpc_url> --private-key <your_private_key> src/QQuestP2PCircleMembership.sol:QQuestP2PCircleMembership
-   forge create --rpc-url <your_rpc_url> --private-key <your_private_key> src/QQuestSavingPool.sol:QQuestSavingPool
+   forge create --rpc-url <network> --private-key <your-private-key> src/QQuestP2PCircle.sol:QQuestP2PCircle
    ```
+   Repeat this step for each contract you want to deploy.
 
-   Replace `<your_rpc_url>` with your Ethereum node RPC URL and `<your_private_key>` with your deployment account's private key.
+## Usage
 
-7. Interact with the contracts using `cast` (Foundry's command-line tool), ethers.js, or any Ethereum wallet provider.
+### Reputation Management:
 
-## License
+- Update User Reputation: Call `updateUserReputation` after a user makes a repayment or contribution.
+- Slash Reputation: If a user defaults, call `slashUserReputation` to penalize them.
+- Get User Reputation: Retrieve the reputation of any user using `getUserReputation`.
 
-This repository is licensed under the MIT License. You are free to use, modify, and distribute the code under the terms of the license.
+### Membership:
 
-## Additional Notes
+- Create an Account: Users can call `createUserAccount` after meeting the minimum Builder Score requirement.
+- Upgrade Tier: To move to a higher tier (e.g., from Ally to Confidant), users can call `updateTierAndMintSoulBound`.
 
-- **Trusted Entity:** The `trustedEntity` is a special address that holds the power to verify user accounts and issue upgrades in the membership contract. It should be a secure and reliable address, possibly controlled by the protocol administrators.
-- **Reputation Slashing:** Reputation is essential in the lending circles and will be slashed based on negative actions or failures to contribute as promised.
+### Savings Pool:
 
-## Future Improvements
+- Initialize a Pool: Call `initialiseSavingPoolAndSaving` with the desired goal, interval, and token.
+- Contribute to the Pool: Periodically call `addSavingsContribution` to make payments.
+- Withdraw Savings: Once the goal is met, call `withdrawSavings` to retrieve the funds.
 
-- **Governance:** Potentially, introduce a DAO structure where users can participate in governance based on their reputation and membership tier.
-- **Dynamic Interest Models:** Consider adding features that allow more complex financial models for advanced savings and lending mechanics.
+## Events
+
+The contracts emit several events that you can monitor to track user activity, tier upgrades, and savings pool interactions.
+
+## Conclusion
+
+The qQuest contracts provide a solid foundation for building a reputation-based P2P funding and savings ecosystem, leveraging reputation management, tiered memberships, and customizable savings pools.
