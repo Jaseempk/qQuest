@@ -186,7 +186,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint256 guardianThreshold,
         uint96 _feePercentValue,
         QQuestP2PCircleMembership someMembership
-    ) QQuestReputationManagment(membershipContract) {
+    ) QQuestReputationManagment(someMembership) {
         if (allyThreshold == 0 || guardianThreshold == 0) {
             revert QQuest__InvalidThresholdValue();
         }
@@ -336,7 +336,6 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @param circleId The unique identifier of the circle
      * @param isReadyToRedeem Boolean indicating if the creator wants to redeem partially filled circles
      */
-
     function redeemCircleFund(
         bytes32 circleId,
         bool isReadyToRedeem
@@ -570,13 +569,18 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         address asset,
         address destination
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        if ((block.timestamp) < uint256(startOfPool + QUARTERLY_TIME_DURATIONS))
+        if (
+            (block.timestamp) < uint256(startOfPool + QUARTERLY_TIME_DURATIONS)
+        ) {
             revert QQuest__FeeRevenueRedemptionOnlyQuarterly();
-        if (asset != i_usdcAddress && asset != i_usdtAddress)
+        }
+        if (asset != i_usdcAddress && asset != i_usdtAddress) {
             revert QQuest__AssetNonExistent();
+        }
 
-        if (totalFeeUsdcCollected == 0 && totalFeeUsdtCollected == 0)
+        if (totalFeeUsdcCollected == 0 && totalFeeUsdtCollected == 0) {
             revert QQuest__ZeroFeeRevenue();
+        }
         uint256 usdAmount = asset == i_usdcAddress
             ? totalFeeUsdcCollected
             : totalFeeUsdtCollected;

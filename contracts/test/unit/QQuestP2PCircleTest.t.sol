@@ -682,7 +682,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         circle.checkUserRepaymentAndUpdateReputation(circleId);
 
         // Verify reputation has been slashed
-        uint16 aliceReputation = circle.getUserReputation(alice);
+        uint16 aliceReputation = circle.getUserReputations(alice);
         assertLt(aliceReputation, 50); // Initial reputation was 50, should be lower now
     }
 
