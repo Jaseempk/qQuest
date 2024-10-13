@@ -16,8 +16,8 @@ import {QQuestReputationManagment} from "./QQuestReputationManagment.sol";
  */
 contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     using Address for address;
-    //Error
 
+    //Error
     error QQuest__UnlockFailed();
     error QQuest__DueTimeNotIn();
     error QQuest__PenalisedUser();
@@ -38,7 +38,10 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__IneligibleForCircling();
     error QQuest_InsufficientCollateral();
     error QQuest__InsufficientCollateral();
+    error QQuest__DueDurationBeyondMaximum();
     error QQuest__OnlyContributorCanAccess();
+    error QQuest__LeadDurationBeyondMaximum();
+    error QQuest__LeadTimeCanOnlyBeInFuture();
     error QQuest__ContributionAmountTooHigh();
     error QQuest__CanOnlyRedeemAfterDuePeriod();
     error QQuest__CantRedeemWhenCircleIsActive();
@@ -57,9 +60,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint8 public constant MIN_BUILDER_SCORE = 25;
     uint8 public constant MIN_CONT_COUNT = 2;
     address public constant ETH_PRICE_FEED_ADDRESS =
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address public constant USDT_PRICE_FEED_ADDRESS =
-        0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
+        0x694AA1769357215DE4FAC081bf1f309aDC325306;
+
     uint128 public constant MAX_DUE_DURATION = 60 days; // Two Months in seconds
     uint128 public constant MAX_LEAD_DURATIONS = 14 days; // Two Weeks in seconds
     uint128 public constant MONTHLY_DURATION = 30 days; // Monthly in seconds
@@ -205,26 +207,31 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @dev Only non-banned users with valid eligibility can create a circle
      * @param collateralPriceFeedAddress Address of the price feed for collateral
      * @param goalValueToRaise The target amount to raise in the circle
-     * @param deadlineForCircle The duration for which the circle will accept contributions
-     * @param timestampForPayback The duration within which the loan should be repaid
+     * @param leadTimeDuration The duration for which the circle will accept contributions
+     * @param paymentDueBy The duration within which the loan should be repaid
      * @param builderScore The score of the circle creator
      * @param isUSDC Boolean indicating if the circle uses USDC (true) or USDT (false)
      */
     function createNewCircle(
         address collateralPriceFeedAddress,
         uint96 goalValueToRaise,
-        uint40 deadlineForCircle,
-        uint40 timestampForPayback,
+        uint40 leadTimeDuration,
+        uint40 paymentDueBy,
         uint16 builderScore,
         bool isUSDC
     ) public payable notBanned validEligibility(builderScore) {
-        uint40 leadTimeDuration = uint40(block.timestamp + deadlineForCircle);
-        uint40 paymentDueBy = leadTimeDuration + timestampForPayback;
+        if (leadTimeDuration < block.timestamp)
+            revert QQuest__LeadTimeCanOnlyBeInFuture();
+        if (paymentDueBy > (block.timestamp + MAX_DUE_DURATION))
+            revert QQuest__DueDurationBeyondMaximum();
+
+        if (leadTimeDuration > (block.timestamp + MAX_LEAD_DURATIONS))
+            revert QQuest__LeadDurationBeyondMaximum();
         validateMembershipAndGoal(goalValueToRaise);
 
         uint96 collateralAmount = calculateCollateral(
             collateralPriceFeedAddress,
-            timestampForPayback,
+            paymentDueBy,
             goalValueToRaise
         );
         validateCollateral(collateralAmount);
@@ -232,8 +239,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         bytes32 circleId = createCircleId(
             msg.sender,
             goalValueToRaise,
-            deadlineForCircle,
-            timestampForPayback,
+            leadTimeDuration,
+            paymentDueBy,
             builderScore
         );
 
@@ -252,8 +259,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             msg.sender,
             isUSDC,
             goalValueToRaise,
-            deadlineForCircle,
-            timestampForPayback,
+            leadTimeDuration,
+            paymentDueBy,
             builderScore
         );
 
@@ -604,15 +611,15 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @notice Calculates the required collateral amount for a circle
      * @dev Internal function used during circle creation
      * @param collateralPriceFeedAddress Address of the price feed for collateral
-     * @param _timestampForPayback Duration for loan repayment
+     * @param leadDuration Duration for loan repayment
      * @param _goalValueToRaise Target amount to be raised
      * @return collateralAmount Amount of collateral required
      */
     function calculateCollateral(
         address collateralPriceFeedAddress,
-        uint256 _timestampForPayback,
+        uint256 leadDuration,
         uint256 _goalValueToRaise
-    ) internal view returns (uint96 collateralAmount) {
+    ) public view returns (uint96 collateralAmount) {
         (, int256 collateralPrice, , , ) = AggregatorV3Interface(
             collateralPriceFeedAddress
         ).latestRoundData();
@@ -620,7 +627,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint256 cAssetEqGoal = ((_goalValueToRaise * PRECISION) *
             COLLATERAL_PRECISION) / uint256(collateralPrice);
 
-        collateralAmount = _timestampForPayback > MONTHLY_DURATION
+        collateralAmount = leadDuration > (block.timestamp + MONTHLY_DURATION)
             ? uint96(cAssetEqGoal * 2)
             : uint96(cAssetEqGoal + (cAssetEqGoal / 2));
     }
@@ -658,7 +665,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      */
     function validateCollateral(uint96 collateralAmount) internal view {
         uint256 requiredCollateral = (uint256(collateralAmount) *
-            (1e18 - PRECISION)) / 1e18;
+            (1e18 - PRECISION));
         if (msg.value < requiredCollateral) {
             revert QQuest__InsufficientCollateral();
         }
