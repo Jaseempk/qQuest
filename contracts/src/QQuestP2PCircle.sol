@@ -60,7 +60,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint8 public constant MIN_BUILDER_SCORE = 25;
     uint8 public constant MIN_CONT_COUNT = 2;
     address public constant ETH_PRICE_FEED_ADDRESS =
-        0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1;
 
     uint128 public constant MAX_DUE_DURATION = 60 days; // Two Months in seconds
     uint128 public constant MAX_LEAD_DURATIONS = 14 days; // Two Weeks in seconds
@@ -112,6 +112,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
 
     event CircleCreated(
         address creator,
+        bytes32 circleId,
         bool isUSDC,
         uint256 goalValueToRaise,
         uint256 leadDurations,
@@ -234,8 +235,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             paymentDueBy,
             goalValueToRaise
         );
-        validateCollateral(collateralAmount);
 
+        validateCollateral(collateralAmount);
         bytes32 circleId = createCircleId(
             msg.sender,
             goalValueToRaise,
@@ -257,6 +258,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
 
         emit CircleCreated(
             msg.sender,
+            circleId,
             isUSDC,
             goalValueToRaise,
             leadTimeDuration,
@@ -275,7 +277,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @param amountToContribute The amount the user wants to contribute
      */
     function contributeToCircle(
-        uint256 builderScore,
+        uint16 builderScore,
         bytes32 circleId,
         int256 amountToContribute
     ) public notBanned {
@@ -428,7 +430,12 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             userToContributionCount[msg.sender],
             userToRepaymentCount[msg.sender]
         );
-        token.transfer(address(this), (circle.fundGoalValue + feeAmount));
+
+        token.transferFrom(
+            msg.sender,
+            address(this),
+            (circle.fundGoalValue + feeAmount)
+        );
     }
 
     /**
@@ -447,10 +454,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             revert QQuest__InsufficientCollateral();
         }
         uint96 cltrAmount = idToUserCircleData[circleId].collateralAmount;
+        uint256 requiredCollateral = (uint256(cltrAmount) * (1e18 / PRECISION));
         idToUserCircleData[circleId].collateralAmount = 0;
 
         (bool success, ) = payable(circle.creator).call{
-            value: cltrAmount * 1 ether
+            value: requiredCollateral
         }("");
         if (!success) revert QQuest__UnlockFailed();
     }
@@ -665,7 +673,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      */
     function validateCollateral(uint96 collateralAmount) internal view {
         uint256 requiredCollateral = (uint256(collateralAmount) *
-            (1e18 - PRECISION));
+            (1e18 / PRECISION));
+
         if (msg.value < requiredCollateral) {
             revert QQuest__InsufficientCollateral();
         }
@@ -676,26 +685,24 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @dev Internal function used during circle creation
      * @param creator Address of the circle creator
      * @param goalValueToRaise Target amount to be raised
-     * @param deadlineForCircle Duration for which the circle will accept contributions
-     * @param timestampForPayback Duration within which the loan should be repaid
+     * @param leadDuration Duration for which the circle will accept contributions
+     * @param paymentDueBy Duration within which the loan should be repaid
      * @param builderScore Score of the circle creator
      * @return bytes32 Unique identifier for the circle
      */
     function createCircleId(
         address creator,
         uint96 goalValueToRaise,
-        uint40 deadlineForCircle,
-        uint40 timestampForPayback,
+        uint40 leadDuration,
+        uint40 paymentDueBy,
         uint16 builderScore
-    ) internal view returns (bytes32) {
-        uint40 paymentDueBy = uint40(
-            block.timestamp + deadlineForCircle + timestampForPayback
-        );
+    ) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
                     creator,
                     goalValueToRaise,
+                    leadDuration,
                     paymentDueBy,
                     builderScore
                 )
@@ -727,7 +734,6 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         address creator,
         uint96 amount
     ) internal {
-        idToUserCircleData[circleId].fundGoalValue = 0;
         idToUserCircleData[circleId].state = CircleState.Redeemed;
         idToCircleAmountLeftToRaise[circleId] = 0;
 
