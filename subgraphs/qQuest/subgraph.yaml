@@ -1,0 +1,56 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: QQuestP2PCircle
+    network: base-sepolia
+    source:
+      address: "0x5692A875EA2F769Bf20809Dd7DcFF14aefD82157"
+      abi: QQuestP2PCircle
+      startBlock: 16560143
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - CircleContribution
+        - CircleCreated
+        - CircleFundRedeemed
+        - CircleKilled
+        - CircleKilled1
+        - CircleRedeemed
+        - RepaymentFailed
+        - RepaymentSuccessful
+        - RoleAdminChanged
+        - RoleGranted
+        - RoleRevoked
+      abis:
+        - name: QQuestP2PCircle
+          file: ./abis/QQuestP2PCircle.json
+      eventHandlers:
+        - event: CircleContribution(address,int256,bytes32,bool,bytes32)
+          handler: handleCircleContribution
+        - event: CircleCreated(address,bytes32,bool,uint256,uint256,uint256,uint16)
+          handler: handleCircleCreated
+        - event: CircleFundRedeemed(address,uint256,bytes32)
+          handler: handleCircleFundRedeemed
+        - event: CircleKilled(address,uint256,bytes32)
+          handler: handleCircleKilled
+        - event: CircleKilled(address,bytes32,uint256)
+          handler: handleCircleKilled1
+        - event: CircleRedeemed(address,bytes32,uint96,uint256)
+          handler: handleCircleRedeemed
+        - event: RepaymentFailed(address,uint8,bytes32,uint256)
+          handler: handleRepaymentFailed
+        - event: RepaymentSuccessful(address,bytes32,uint256,uint256)
+          handler: handleRepaymentSuccessful
+        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+          handler: handleRoleAdminChanged
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleRevoked
+      file: ./src/q-quest-p-2-p-circle.ts
