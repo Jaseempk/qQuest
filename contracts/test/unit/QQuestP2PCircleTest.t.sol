@@ -6,14 +6,17 @@ import {QQuestP2PCircleMembership} from "../../src/QQuestP2PCircleMembership.sol
 import {QQuestP2PCircle} from "../../src/QQuestP2PCircle.sol";
 import {QQuestReputationManagment} from "../../src/QQuestReputationManagment.sol";
 import {EIP712} from "lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import {MockUSDT} from "../Mocks/MockUSDT.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract QQuestP2PCircleTest is Test, EIP712 {
     QQuestP2PCircle public circle;
     QQuestP2PCircleMembership public membership;
     QQuestReputationManagment public reputation;
+    MockUSDT public usdt;
     IERC20 public usdc;
-    IERC20 public usdt;
+
     string name = "qQuest";
     string version = "1.11";
     string uri =
@@ -22,7 +25,7 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     uint256 trustedEntityPrivKey =
         0xfbf992b0e25ad29c85aae3d69fcb7f09240dd2588ecee449a4934b9e499102cc;
     address public constant USDC_WHALE =
-        0x55FE002aefF02F77364de339a1292923A15844B8;
+        0xF977814e90dA44bFA03b6295A0616a897441aceC;
     address public constant USDT_WHALE =
         0x5754284f345afc66a98fbB0a0Afe71e0F007B949;
     uint128 public constant MONTHLY_DURATION = 30 days; // Monthly in seconds
@@ -37,9 +40,9 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     uint16 public constant PRECISION = 1e3;
     uint32 public constant COLLATERAL_PRECISION = 1e8;
 
-    uint40 leadTimeDuration = 1729665154;
+    uint40 leadTimeDuration = 1729917550;
 
-    uint40 paymentDueBy = 1732948354;
+    uint40 paymentDueBy = 1731731950;
 
     event RepaymentFailed(
         address creator,
@@ -51,8 +54,8 @@ contract QQuestP2PCircleTest is Test, EIP712 {
     constructor() EIP712(name, version) {}
 
     function setUp() public {
-        // Fork mainnet
-        // vm.createSelectFork("mainnet", 18_811_133);
+        // Set up USDC and USDT
+        usdt = new MockUSDT();
 
         uint256 aliceBuilderScore = 25;
         uint256 bobBuilderScore = 30;
@@ -74,10 +77,13 @@ contract QQuestP2PCircleTest is Test, EIP712 {
             10, // feePercentValue (1%)
             membership
         );
+        usdc = IERC20(circle.i_usdcAddress());
+
+        circle.updateTokenAddress(address(usdt));
 
         // Set up test accounts
         alice = USDC_WHALE;
-        bob = USDT_WHALE;
+        bob = makeAddr("bob");
         charlie = makeAddr("charlie");
 
         bytes32 aliceDigest = membership.mintRequestHelper(
@@ -96,12 +102,11 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         bytes memory bobSig = signSale(bobDigest, trustedEntityPrivKey);
         bytes memory charlieSig = signSale(charlieDigest, trustedEntityPrivKey);
 
-        // Set up USDC and USDT
-        usdc = IERC20(circle.i_usdcAddress());
-        usdt = IERC20(circle.i_usdtAddress());
+        usdt.mint(alice, 1000000 * 1e6); // 1 million USDT
 
         // Fund test accounts with USDC and USDT
         deal(address(usdc), charlie, 10000e6);
+        deal(address(usdc), bob, 10000e6);
         deal(address(usdt), charlie, 10000e6);
 
         // Grant ALLY_TOKEN to test accounts
@@ -119,8 +124,8 @@ contract QQuestP2PCircleTest is Test, EIP712 {
         uint96 goalValue = 1000; // 1000 USDC
 
         bool isUSDC = true;
-        uint40 _leadDuration = 1729665154;
-        uint40 _paymentDueBy = 1732948354;
+        uint40 _leadDuration = 1729917550;
+        uint40 _paymentDueBy = 1731731950;
 
         vm.startPrank(alice);
         usdc.approve(address(circle), goalValue);

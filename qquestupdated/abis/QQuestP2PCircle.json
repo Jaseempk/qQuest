@@ -536,7 +536,7 @@
         "name": "collateralPriceFeedAddress",
         "type": "address"
       },
-      { "internalType": "uint256", "name": "leadDuration", "type": "uint256" },
+      { "internalType": "uint256", "name": "paymentDueBy", "type": "uint256" },
       {
         "internalType": "uint256",
         "name": "_goalValueToRaise",
@@ -852,6 +852,15 @@
       { "internalType": "bytes32", "name": "circleId", "type": "bytes32" }
     ],
     "name": "unlockCollateral",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "usdtAddress", "type": "address" }
+    ],
+    "name": "updateTokenAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

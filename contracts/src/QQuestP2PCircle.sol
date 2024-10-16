@@ -50,9 +50,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__FeeRevenueRedemptionOnlyQuarterly();
 
     address public immutable i_usdcAddress =
-        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public immutable i_usdtAddress =
-        0xdAC17F958D2ee523a2206206994597C13D831ec7;
+        0xC129124eA2Fd4D63C1Fc64059456D8f231eBbed1;
+    address public i_usdtAddress = 0xAf59dB7E4C9DB20eFFDE853B56412cfF1dc3f379;
 
     uint16 public constant PRECISION = 1e3;
     uint32 public constant COLLATERAL_PRECISION = 1e8;
@@ -606,6 +605,12 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         IERC20(asset).transferFrom(address(this), destination, usdAmount);
     }
 
+    function updateTokenAddress(
+        address usdtAddress
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        i_usdtAddress = usdtAddress;
+    }
+
     /**
      * @notice Retrieves the reputation score of a user
      * @param user Address of the user
@@ -619,13 +624,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @notice Calculates the required collateral amount for a circle
      * @dev Internal function used during circle creation
      * @param collateralPriceFeedAddress Address of the price feed for collateral
-     * @param leadDuration Duration for loan repayment
+     * @param paymentDueBy Duration for loan repayment
      * @param _goalValueToRaise Target amount to be raised
      * @return collateralAmount Amount of collateral required
      */
     function calculateCollateral(
         address collateralPriceFeedAddress,
-        uint256 leadDuration,
+        uint256 paymentDueBy,
         uint256 _goalValueToRaise
     ) public view returns (uint96 collateralAmount) {
         (, int256 collateralPrice, , , ) = AggregatorV3Interface(
@@ -635,7 +640,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint256 cAssetEqGoal = ((_goalValueToRaise * PRECISION) *
             COLLATERAL_PRECISION) / uint256(collateralPrice);
 
-        collateralAmount = leadDuration > (block.timestamp + MONTHLY_DURATION)
+        collateralAmount = paymentDueBy > (block.timestamp + MONTHLY_DURATION)
             ? uint96(cAssetEqGoal * 2)
             : uint96(cAssetEqGoal + (cAssetEqGoal / 2));
     }
