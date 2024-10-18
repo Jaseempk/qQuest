@@ -41,14 +41,14 @@ endif
 
 deploy:
 	@forge script script/DeployQQuestCircle.s.sol:DeployQQuestCircle $(NETWORK_ARGS)
-#@forge script script/DeployQQuestMembership.s.sol:DeployQQuestMembership $(NETWORK_ARGS)
-#@forge script script/Mock/DeployMockUSDC.s.sol:DeployMockUSDC $(NETWORK_ARGS)
-#@forge script script/Mock/DeployMockUSDT.s.sol:DeployMockUSDT $(NETWORK_ARGS)
+	@forge script script/DeployQQuestMembership.s.sol:DeployQQuestMembership $(NETWORK_ARGS)
+	@forge script script/Mock/DeployMockUSDC.s.sol:DeployMockUSDC $(NETWORK_ARGS)
+	@forge script script/Mock/DeployMockUSDT.s.sol:DeployMockUSDT $(NETWORK_ARGS)
 
 
 
 verify:
-	@forge verify-contract --chain-id 84532 --watch --constructor-args `cast abi-encode "constructor(uint256,uint256,uint96,address)" "$(ALLY_THRESHOLD)" "$(GUARDIAN_THRESHOLD)" "$(FEEPERCENT_VALUE)" "$(MEMBERSHIP_ADDRESS)"` --etherscan-api-key $(ETHERSCAN_API_KEY) --compiler-version 0.8.24 0x56A6A83862F4aB1c3b271A4f3244D6235E2D1c5f src/QQuestP2PCircle.sol:QQuestP2PCircle
-#@forge verify-contract --chain-id 84532 --watch --constructor-args `cast abi-encode "constructor(string,string,string,address)" "$(NAME)" "$(VERSION)" "$(TOKEN_URI)" "$(TRUSTED_ENTITY)"` --etherscan-api-key $(ETHERSCAN_API_KEY) --compiler-version 0.8.24 0x99aE5Be5501b517cd6459198cf9B1D6e3911A286 src/QQuestP2PCircleMembership.sol:QQuestP2PCircleMembership
-#@forge verify-contract --chain-id 84532 --watch --etherscan-api-key $(ETHERSCAN_API_KEY) --compiler-version 0.8.24 0xC129124eA2Fd4D63C1Fc64059456D8f231eBbed1 test/Mocks/MockUSDC.sol:MockUSDC
+	@forge verify-contract --chain-id 84532 --watch --constructor-args `cast abi-encode "constructor(uint256,uint256,uint96,address)" "$(ALLY_THRESHOLD)" "$(GUARDIAN_THRESHOLD)" "$(FEEPERCENT_VALUE)" "$(MEMBERSHIP_ADDRESS)"` --etherscan-api-key $(ETHERSCAN_API_KEY) --compiler-version 0.8.24 0x016d00E2F9178B506f8Fa8E27Eb12b1654B9d78D src/QQuestP2PCircle.sol:QQuestP2PCircle
+	@forge verify-contract --chain-id 84532 --watch --constructor-args `cast abi-encode "constructor(string,string,string,address)" "$(NAME)" "$(VERSION)" "$(TOKEN_URI)" "$(TRUSTED_ENTITY)"` --etherscan-api-key $(ETHERSCAN_API_KEY) --compiler-version 0.8.24 0x54CDf5787f7b5B585687Fe83cD1A460fe5b94c7f src/QQuestP2PCircleMembership.sol:QQuestP2PCircleMembership
+	@forge verify-contract --chain-id 84532 --watch --etherscan-api-key $(ETHERSCAN_API_KEY) --compiler-version 0.8.24 0xC129124eA2Fd4D63C1Fc64059456D8f231eBbed1 test/Mocks/MockUSDC.sol:MockUSDC
 

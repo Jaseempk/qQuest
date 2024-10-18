@@ -11,7 +11,7 @@ contract DeployQQuestCircle is Script {
     QQuestP2PCircle qQuest;
     QQuestReputationManagment qQuestReputation;
     QQuestP2PCircleMembership membershipContract;
-    address membership = 0x99aE5Be5501b517cd6459198cf9B1D6e3911A286;
+    address membership = 0x54CDf5787f7b5B585687Fe83cD1A460fe5b94c7f;
     uint256 allyThreshold = 1000;
     uint256 guardianThreshold = 6000;
     uint96 feePercentValue = 10;
@@ -28,4 +28,3 @@ contract DeployQQuestCircle is Script {
         vm.stopBroadcast();
     }
 }
-//0x2E9cba744CDf48090820ec3b3E48BDE3aE525b23
