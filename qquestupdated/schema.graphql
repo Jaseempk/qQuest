@@ -24,6 +24,29 @@ type CircleCreated @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
+type Circle @entity(immutable: true) {
+  id: Bytes!
+  creator: Bytes! # address
+  circleId: Bytes! # bytes32
+  isUSDC: Boolean! # bool
+  goalValueToRaise: BigInt! # uint256
+  leadDurations: BigInt! # uint256
+  dueDuration: BigInt! # uint256
+  builderScore: Int! # uint16
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  contributors: [Bytes!] # address
+  contributionAmount: [BigInt!]
+  state: Int!
+  redeemedBlockNumber: BigInt!
+  redeemedBlockTimestamp: BigInt!
+  redeemedTransactionHash: Bytes!
+  killedBlockNumber: BigInt!
+  killedBlockTimestamp: BigInt!
+  killedTransactionHash: Bytes!
+}
+
 type CircleFundRedeemed @entity(immutable: true) {
   id: Bytes!
   creator: Bytes! # address
