@@ -154,6 +154,11 @@ Several of the contracts use AccessControl to enforce permission management, ens
 
 The contracts emit several events that you can monitor to track user activity, tier upgrades, and savings pool interactions.
 
+## Contract Addresses:
+
+Circle Contract:0x016d00E2F9178B506f8Fa8E27Eb12b1654B9d78D
+Membership Contract:0x54CDf5787f7b5B585687Fe83cD1A460fe5b94c7f
+
 ## Conclusion
 
 The qQuest contracts provide a solid foundation for building a reputation-based P2P funding and savings ecosystem, leveraging reputation management, tiered memberships, and customizable savings pools.
