@@ -3,15 +3,19 @@ import { ethereum, Address, BigInt, Bytes } from "@graphprotocol/graph-ts"
 import {
   CircleContribution,
   CircleCreated,
-  CircleFundRedeemed,
   CircleKilled,
-  CircleKilled1,
   CircleRedeemed,
+  CircleThresholdUpdated,
   RepaymentFailed,
   RepaymentSuccessful,
   RoleAdminChanged,
   RoleGranted,
-  RoleRevoked
+  RoleRevoked,
+  UserBanned,
+  UserCollateralUnlocked,
+  UserContributionRedeemed,
+  UserReputationScoreSlashed,
+  UserReputationScoreUpdated
 } from "../generated/QQuestP2PCircle/QQuestP2PCircle"
 
 export function createCircleContributionEvent(
@@ -103,35 +107,10 @@ export function createCircleCreatedEvent(
   return circleCreatedEvent
 }
 
-export function createCircleFundRedeemedEvent(
-  creator: Address,
-  redemptionAmount: BigInt,
-  circleId: Bytes
-): CircleFundRedeemed {
-  let circleFundRedeemedEvent = changetype<CircleFundRedeemed>(newMockEvent())
-
-  circleFundRedeemedEvent.parameters = new Array()
-
-  circleFundRedeemedEvent.parameters.push(
-    new ethereum.EventParam("creator", ethereum.Value.fromAddress(creator))
-  )
-  circleFundRedeemedEvent.parameters.push(
-    new ethereum.EventParam(
-      "redemptionAmount",
-      ethereum.Value.fromUnsignedBigInt(redemptionAmount)
-    )
-  )
-  circleFundRedeemedEvent.parameters.push(
-    new ethereum.EventParam("circleId", ethereum.Value.fromFixedBytes(circleId))
-  )
-
-  return circleFundRedeemedEvent
-}
-
 export function createCircleKilledEvent(
   creator: Address,
-  circleRaisedAmount: BigInt,
-  circleId: Bytes
+  circleId: Bytes,
+  timestamp: BigInt
 ): CircleKilled {
   let circleKilledEvent = changetype<CircleKilled>(newMockEvent())
 
@@ -141,41 +120,16 @@ export function createCircleKilledEvent(
     new ethereum.EventParam("creator", ethereum.Value.fromAddress(creator))
   )
   circleKilledEvent.parameters.push(
-    new ethereum.EventParam(
-      "circleRaisedAmount",
-      ethereum.Value.fromUnsignedBigInt(circleRaisedAmount)
-    )
+    new ethereum.EventParam("circleId", ethereum.Value.fromFixedBytes(circleId))
   )
   circleKilledEvent.parameters.push(
-    new ethereum.EventParam("circleId", ethereum.Value.fromFixedBytes(circleId))
-  )
-
-  return circleKilledEvent
-}
-
-export function createCircleKilled1Event(
-  creator: Address,
-  circleId: Bytes,
-  timestamp: BigInt
-): CircleKilled1 {
-  let circleKilled1Event = changetype<CircleKilled1>(newMockEvent())
-
-  circleKilled1Event.parameters = new Array()
-
-  circleKilled1Event.parameters.push(
-    new ethereum.EventParam("creator", ethereum.Value.fromAddress(creator))
-  )
-  circleKilled1Event.parameters.push(
-    new ethereum.EventParam("circleId", ethereum.Value.fromFixedBytes(circleId))
-  )
-  circleKilled1Event.parameters.push(
     new ethereum.EventParam(
       "timestamp",
       ethereum.Value.fromUnsignedBigInt(timestamp)
     )
   )
 
-  return circleKilled1Event
+  return circleKilledEvent
 }
 
 export function createCircleRedeemedEvent(
@@ -208,6 +162,32 @@ export function createCircleRedeemedEvent(
   )
 
   return circleRedeemedEvent
+}
+
+export function createCircleThresholdUpdatedEvent(
+  newAllyGoalValueThreshold: BigInt,
+  newGuardianGoalValueThreshold: BigInt
+): CircleThresholdUpdated {
+  let circleThresholdUpdatedEvent = changetype<CircleThresholdUpdated>(
+    newMockEvent()
+  )
+
+  circleThresholdUpdatedEvent.parameters = new Array()
+
+  circleThresholdUpdatedEvent.parameters.push(
+    new ethereum.EventParam(
+      "newAllyGoalValueThreshold",
+      ethereum.Value.fromUnsignedBigInt(newAllyGoalValueThreshold)
+    )
+  )
+  circleThresholdUpdatedEvent.parameters.push(
+    new ethereum.EventParam(
+      "newGuardianGoalValueThreshold",
+      ethereum.Value.fromUnsignedBigInt(newGuardianGoalValueThreshold)
+    )
+  )
+
+  return circleThresholdUpdatedEvent
 }
 
 export function createRepaymentFailedEvent(
@@ -344,4 +324,159 @@ export function createRoleRevokedEvent(
   )
 
   return roleRevokedEvent
+}
+
+export function createUserBannedEvent(
+  user: Address,
+  timestamp: BigInt,
+  userFailedRepaymentCount: i32
+): UserBanned {
+  let userBannedEvent = changetype<UserBanned>(newMockEvent())
+
+  userBannedEvent.parameters = new Array()
+
+  userBannedEvent.parameters.push(
+    new ethereum.EventParam("user", ethereum.Value.fromAddress(user))
+  )
+  userBannedEvent.parameters.push(
+    new ethereum.EventParam(
+      "timestamp",
+      ethereum.Value.fromUnsignedBigInt(timestamp)
+    )
+  )
+  userBannedEvent.parameters.push(
+    new ethereum.EventParam(
+      "userFailedRepaymentCount",
+      ethereum.Value.fromUnsignedBigInt(
+        BigInt.fromI32(userFailedRepaymentCount)
+      )
+    )
+  )
+
+  return userBannedEvent
+}
+
+export function createUserCollateralUnlockedEvent(
+  user: Address,
+  circleId: Bytes,
+  amount: BigInt,
+  timestamp: BigInt
+): UserCollateralUnlocked {
+  let userCollateralUnlockedEvent = changetype<UserCollateralUnlocked>(
+    newMockEvent()
+  )
+
+  userCollateralUnlockedEvent.parameters = new Array()
+
+  userCollateralUnlockedEvent.parameters.push(
+    new ethereum.EventParam("user", ethereum.Value.fromAddress(user))
+  )
+  userCollateralUnlockedEvent.parameters.push(
+    new ethereum.EventParam("circleId", ethereum.Value.fromFixedBytes(circleId))
+  )
+  userCollateralUnlockedEvent.parameters.push(
+    new ethereum.EventParam("amount", ethereum.Value.fromUnsignedBigInt(amount))
+  )
+  userCollateralUnlockedEvent.parameters.push(
+    new ethereum.EventParam(
+      "timestamp",
+      ethereum.Value.fromUnsignedBigInt(timestamp)
+    )
+  )
+
+  return userCollateralUnlockedEvent
+}
+
+export function createUserContributionRedeemedEvent(
+  user: Address,
+  contributionId: Bytes,
+  amount: BigInt,
+  timestamp: BigInt
+): UserContributionRedeemed {
+  let userContributionRedeemedEvent = changetype<UserContributionRedeemed>(
+    newMockEvent()
+  )
+
+  userContributionRedeemedEvent.parameters = new Array()
+
+  userContributionRedeemedEvent.parameters.push(
+    new ethereum.EventParam("user", ethereum.Value.fromAddress(user))
+  )
+  userContributionRedeemedEvent.parameters.push(
+    new ethereum.EventParam(
+      "contributionId",
+      ethereum.Value.fromFixedBytes(contributionId)
+    )
+  )
+  userContributionRedeemedEvent.parameters.push(
+    new ethereum.EventParam("amount", ethereum.Value.fromUnsignedBigInt(amount))
+  )
+  userContributionRedeemedEvent.parameters.push(
+    new ethereum.EventParam(
+      "timestamp",
+      ethereum.Value.fromUnsignedBigInt(timestamp)
+    )
+  )
+
+  return userContributionRedeemedEvent
+}
+
+export function createUserReputationScoreSlashedEvent(
+  user: Address,
+  updatedReputationScore: i32
+): UserReputationScoreSlashed {
+  let userReputationScoreSlashedEvent = changetype<UserReputationScoreSlashed>(
+    newMockEvent()
+  )
+
+  userReputationScoreSlashedEvent.parameters = new Array()
+
+  userReputationScoreSlashedEvent.parameters.push(
+    new ethereum.EventParam("user", ethereum.Value.fromAddress(user))
+  )
+  userReputationScoreSlashedEvent.parameters.push(
+    new ethereum.EventParam(
+      "updatedReputationScore",
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(updatedReputationScore))
+    )
+  )
+
+  return userReputationScoreSlashedEvent
+}
+
+export function createUserReputationScoreUpdatedEvent(
+  user: Address,
+  numberOfContributions: i32,
+  repaymentCount: i32,
+  reputationScore: i32
+): UserReputationScoreUpdated {
+  let userReputationScoreUpdatedEvent = changetype<UserReputationScoreUpdated>(
+    newMockEvent()
+  )
+
+  userReputationScoreUpdatedEvent.parameters = new Array()
+
+  userReputationScoreUpdatedEvent.parameters.push(
+    new ethereum.EventParam("user", ethereum.Value.fromAddress(user))
+  )
+  userReputationScoreUpdatedEvent.parameters.push(
+    new ethereum.EventParam(
+      "numberOfContributions",
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(numberOfContributions))
+    )
+  )
+  userReputationScoreUpdatedEvent.parameters.push(
+    new ethereum.EventParam(
+      "repaymentCount",
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(repaymentCount))
+    )
+  )
+  userReputationScoreUpdatedEvent.parameters.push(
+    new ethereum.EventParam(
+      "reputationScore",
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(reputationScore))
+    )
+  )
+
+  return userReputationScoreUpdatedEvent
 }

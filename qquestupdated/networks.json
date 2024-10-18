@@ -1,8 +1,0 @@
-{
-  "base-sepolia": {
-    "QQuestP2PCircle": {
-      "address": "0x56A6A83862F4aB1c3b271A4f3244D6235E2D1c5f",
-      "startBlock": 16655035
-    }
-  }
-}

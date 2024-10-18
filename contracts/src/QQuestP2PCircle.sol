@@ -441,35 +441,44 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         CircleData memory circle = idToUserCircleData[circleId];
         uint96 minimumPartialCircleThreshold = (circle.fundGoalValue) / 2;
 
+        // Calculate the amount raised by subtracting the amount left to raise from the goal
         uint96 circleAmountRaised = uint96(
             circle.fundGoalValue -
                 uint256(idToCircleAmountLeftToRaise[circleId])
         );
 
+        // Ensure only the circle creator can redeem funds
         if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
+        // Check if the raised amount meets the minimum threshold
         if (circleAmountRaised < minimumPartialCircleThreshold) {
             revert QQuest__CircleInsufficientPartialFilling();
         }
 
+        // Ensure the lead time duration has passed
         if (block.timestamp < circle.leadTimeDuration) {
             revert QQuest__CircleDurationNotOver();
         }
 
+        // Check if the circle is still active
         if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
 
+        // Determine if the circle is partially filled
         bool isPartiallyFilled = circleAmountRaised < circle.fundGoalValue;
 
+        // If partially filled and not ready to redeem, kill the circle
         if (isPartiallyFilled && (!isReadyToRedeem)) {
             emit CircleKilled(msg.sender, circleId, block.timestamp);
             _killCircle(circleId);
             return;
         }
+        // Emit event for successful redemption
         emit CircleRedeemed(
             msg.sender,
             circleId,
             circleAmountRaised,
             block.timestamp
         );
+        // Process the redemption
         _redeemCircle(
             circleId,
             circle.isUSDC,
@@ -484,31 +493,31 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      * @param circleId The unique identifier of the circle
      */
     function paybackCircledFund(bytes32 circleId) public notBanned {
-        CircleData memory circle = idToUserCircleData[circleId];
+        CircleData memory circle = idToUserCircleData[circleId]; // Load circle data from storage
 
-        if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess();
+        if (msg.sender != circle.creator) revert QQuest__OnlyCreatorCanAccess(); // Ensure only the circle creator can repay
 
         if (circle.paymentDueBy < block.timestamp) {
-            idToUserCircleData[circleId].isRepaymentOnTime = false;
-            userToFailedRepaymentCount[circle.creator] += 1;
-            slashUserReputation(circle.creator);
+            idToUserCircleData[circleId].isRepaymentOnTime = false; // Mark repayment as late
+            userToFailedRepaymentCount[circle.creator] += 1; // Increment failed repayment count
+            slashUserReputation(circle.creator); // Reduce user's reputation
             emit RepaymentFailed(
                 circle.creator,
                 userToFailedRepaymentCount[circle.creator],
                 circleId,
                 block.timestamp
             );
-            return;
+            return; // Exit function if repayment is late
         }
         uint96 feeAmount = ((circle.fundGoalValue * feePercentValue) / 1000) +
-            1;
-        userToRepaymentCount[msg.sender] += 1;
+            1; // Calculate fee amount
+        userToRepaymentCount[msg.sender] += 1; // Increment successful repayment count
 
-        idToUserCircleData[circleId].isRepaymentOnTime = true;
+        idToUserCircleData[circleId].isRepaymentOnTime = true; // Mark repayment as on time
 
         IERC20 token = circle.isUSDC
             ? IERC20(i_usdcAddress)
-            : IERC20(i_usdtAddress);
+            : IERC20(i_usdtAddress); // Select appropriate token (USDC or USDT)
         emit RepaymentSuccessful(
             msg.sender,
             circleId,
@@ -518,13 +527,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         updateUserReputation(
             userToContributionCount[msg.sender],
             userToRepaymentCount[msg.sender]
-        );
+        ); // Update user's reputation based on contribution and repayment history
 
         token.transferFrom(
             msg.sender,
             address(this),
             (circle.fundGoalValue + feeAmount)
-        );
+        ); // Transfer repayment amount plus fee from user to contract
     }
 
     /**

@@ -8,9 +8,9 @@ dataSources:
     name: QQuestP2PCircle
     network: base-sepolia
     source:
-      address: "0x56A6A83862F4aB1c3b271A4f3244D6235E2D1c5f"
+      address: "0x016d00E2F9178B506f8Fa8E27Eb12b1654B9d78D"
       abi: QQuestP2PCircle
-      startBlock: 16655035
+      startBlock: 16726297
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -18,15 +18,19 @@ dataSources:
       entities:
         - CircleContribution
         - CircleCreated
-        - CircleFundRedeemed
         - CircleKilled
-        - CircleKilled1
         - CircleRedeemed
+        - CircleThresholdUpdated
         - RepaymentFailed
         - RepaymentSuccessful
         - RoleAdminChanged
         - RoleGranted
         - RoleRevoked
+        - UserBanned
+        - UserCollateralUnlocked
+        - UserContributionRedeemed
+        - UserReputationScoreSlashed
+        - UserReputationScoreUpdated
       abis:
         - name: QQuestP2PCircle
           file: ./abis/QQuestP2PCircle.json
@@ -35,14 +39,12 @@ dataSources:
           handler: handleCircleContribution
         - event: CircleCreated(address,bytes32,bool,uint256,uint256,uint256,uint16)
           handler: handleCircleCreated
-        - event: CircleFundRedeemed(address,uint256,bytes32)
-          handler: handleCircleFundRedeemed
-        - event: CircleKilled(address,uint256,bytes32)
-          handler: handleCircleKilled
         - event: CircleKilled(address,bytes32,uint256)
-          handler: handleCircleKilled1
+          handler: handleCircleKilled
         - event: CircleRedeemed(address,bytes32,uint96,uint256)
           handler: handleCircleRedeemed
+        - event: CircleThresholdUpdated(uint256,uint256)
+          handler: handleCircleThresholdUpdated
         - event: RepaymentFailed(address,uint8,bytes32,uint256)
           handler: handleRepaymentFailed
         - event: RepaymentSuccessful(address,bytes32,uint256,uint256)
@@ -53,4 +55,14 @@ dataSources:
           handler: handleRoleGranted
         - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
           handler: handleRoleRevoked
+        - event: UserBanned(address,uint256,uint8)
+          handler: handleUserBanned
+        - event: UserCollateralUnlocked(address,bytes32,uint256,uint256)
+          handler: handleUserCollateralUnlocked
+        - event: UserContributionRedeemed(address,bytes32,uint256,uint256)
+          handler: handleUserContributionRedeemed
+        - event: UserReputationScoreSlashed(address,uint16)
+          handler: handleUserReputationScoreSlashed
+        - event: UserReputationScoreUpdated(address,uint16,uint16,uint16)
+          handler: handleUserReputationScoreUpdated
       file: ./src/q-quest-p-2-p-circle.ts
