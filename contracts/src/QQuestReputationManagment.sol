@@ -28,6 +28,18 @@ contract QQuestReputationManagment {
     // QQuestP2PCircleMembership contract to verify user roles
     QQuestP2PCircleMembership membershipContract;
 
+    event UserReputationScoreUpdated(
+        address user,
+        uint16 numberOfContributions,
+        uint16 repaymentCount,
+        uint16 reputationScore
+    );
+
+    event UserReputationScoreSlashed(
+        address user,
+        uint16 updatedReputationScore
+    );
+
     /**
      * @notice Constructor initializes the membership contract reference
      * @param qQmembership The address of the QQuestP2PCircleMembership contract
@@ -43,18 +55,29 @@ contract QQuestReputationManagment {
      * @param numberOfRepayments The number of repayments made by the user
      * @return The updated reputation score of the user
      */
-    function updateUserReputation(uint16 numberOfContributions, uint16 numberOfRepayments) internal returns (uint16) {
+    function updateUserReputation(
+        uint16 numberOfContributions,
+        uint16 numberOfRepayments
+    ) internal returns (uint16) {
         // Revert if both contributions and repayments are zero
         if (numberOfContributions == 0 && numberOfRepayments == 0) {
             revert QQ__InvalidParams();
         }
 
         // Calculate weighted reputation score
-        uint16 userReputations =
-            (numberOfContributions * CONTRIBUTION_WEIGHTAGE) + (numberOfRepayments * REPAYMENTS_WEIGHTAGE);
+        uint16 userReputations = (numberOfContributions *
+            CONTRIBUTION_WEIGHTAGE) +
+            (numberOfRepayments * REPAYMENTS_WEIGHTAGE);
 
         // Update user's reputation in the mapping
         userReputation[msg.sender] = userReputations;
+
+        emit UserReputationScoreUpdated(
+            msg.sender,
+            numberOfContributions,
+            numberOfRepayments,
+            userReputation[msg.sender]
+        );
 
         // Return the updated reputation score
         return userReputation[msg.sender];
@@ -67,25 +90,40 @@ contract QQuestReputationManagment {
      */
     function slashUserReputation(address user) internal {
         // Check if the user holds the Guardian role (GUARDIAN_TOKEN_ID)
-        if (membershipContract.balanceOf(user, membershipContract.GUARDIAN_TOKEN_ID()) == 1) {
+        if (
+            membershipContract.balanceOf(
+                user,
+                membershipContract.GUARDIAN_TOKEN_ID()
+            ) == 1
+        ) {
             // Slash a percentage of the user's reputation based on the guardian slashing threshold
-            uint16 amountToSlash = (userReputation[user] * guardianSlashingThreshold) / 100;
+            uint16 amountToSlash = (userReputation[user] *
+                guardianSlashingThreshold) / 100;
             userReputation[user] -= amountToSlash;
             return;
 
             // Check if the user holds the Confidant role (CONFIDANT_TOKEN_ID)
-        } else if (membershipContract.balanceOf(user, membershipContract.CONFIDANT_TOKEN_ID()) == 1) {
+        } else if (
+            membershipContract.balanceOf(
+                user,
+                membershipContract.CONFIDANT_TOKEN_ID()
+            ) == 1
+        ) {
             // Slash a percentage of the user's reputation based on the confidant slashing threshold
-            uint16 amountToSlash = (userReputation[user] * confidantSlashingThreshold) / 100;
+            uint16 amountToSlash = (userReputation[user] *
+                confidantSlashingThreshold) / 100;
             userReputation[user] -= amountToSlash;
             return;
 
             // Default case for slashing applies to allies
         } else {
             // Slash a percentage of the user's reputation based on the ally slashing threshold
-            uint16 amountToSlash = (userReputation[user] * allySlashingThreshold) / 100;
+            uint16 amountToSlash = (userReputation[user] *
+                allySlashingThreshold) / 100;
             userReputation[user] -= amountToSlash;
         }
+
+        emit UserReputationScoreSlashed(msg.sender, userReputation[msg.sender]);
     }
 
     /**

@@ -11,8 +11,15 @@ import {QQuestReputationManagment} from "./QQuestReputationManagment.sol";
 
 /**
  * @title QQuestP2PCircle
- * @dev A decentralized peer-to-peer funding platform with reputation management and membership tiers.
- * @notice This contract allows users to create funding circles, contribute funds, and manage repayments.
+ * @dev A decentralized peer-to-peer funding platform with advanced reputation management and tiered membership system.
+ * @notice This contract enables users to create and participate in funding circles, manage contributions, and handle repayments.
+ * @dev Key features include:
+ *  - Creation and management of funding circles
+ *  - User contribution tracking and fund allocation
+ *  - Reputation-based access control and incentives
+ *  - Tiered membership system affecting user capabilities
+ *  - Collateral management and penalty mechanisms
+ * @dev Inherits from AccessControl for role-based permissions and QQuestReputationManagment for user reputation tracking
  */
 contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     using Address for address;
@@ -49,55 +56,82 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__CircleInsufficientPartialFilling();
     error QQuest__FeeRevenueRedemptionOnlyQuarterly();
 
+    // Address of the USDC token contract
     address public immutable i_usdcAddress =
         0xC129124eA2Fd4D63C1Fc64059456D8f231eBbed1;
+    // Address of the USDT token contract
     address public i_usdtAddress = 0xAf59dB7E4C9DB20eFFDE853B56412cfF1dc3f379;
 
+    // Precision for percentage calculations
     uint16 public constant PRECISION = 1e3;
+    // Precision for collateral calculations
     uint32 public constant COLLATERAL_PRECISION = 1e8;
 
+    // Minimum builder score required for certain actions
     uint8 public constant MIN_BUILDER_SCORE = 25;
+    // Minimum number of contributions required for certain actions
     uint8 public constant MIN_CONT_COUNT = 2;
+    // Address of the Ethereum price feed
     address public constant ETH_PRICE_FEED_ADDRESS =
         0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1;
 
-    uint128 public constant MAX_DUE_DURATION = 60 days; // Two Months in seconds
-    uint128 public constant MAX_LEAD_DURATIONS = 14 days; // Two Weeks in seconds
-    uint128 public constant MONTHLY_DURATION = 30 days; // Monthly in seconds
+    // Maximum duration for loan repayment (60 days)
+    uint128 public constant MAX_DUE_DURATION = 60 days;
+    // Maximum duration for circle lead time (14 days)
+    uint128 public constant MAX_LEAD_DURATIONS = 14 days;
+    // Standard monthly duration in seconds
+    uint128 public constant MONTHLY_DURATION = 30 days;
+    // Quarterly time duration in seconds
     uint128 public constant QUARTERLY_TIME_DURATIONS = 120 days;
 
+    // Fee percentage for the platform
     uint96 public feePercentValue;
+    // Threshold for Ally tier goal value
     uint256 public allyGoalValueThreshold;
+    // Threshold for Guardian tier goal value
     uint256 public guardianGoalValueThreshold;
+    // Total USDC fees collected
     uint256 public totalFeeUsdcCollected;
+    // Total USDT fees collected
     uint256 public totalFeeUsdtCollected;
+    // Timestamp of when the pool started
     uint256 public startOfPool;
 
+    // Mapping to track banned users
     mapping(address user => bool isBanned) public isUserBanned;
+    // Mapping of contribution ID to contribution details
     mapping(bytes32 contributionId => ContributionDeets)
         public idToContributionDeets;
+    // Mapping of circle ID to circle data
     mapping(bytes32 circleId => CircleData) public idToUserCircleData;
+    // Mapping of circle ID to remaining amount to be raised
     mapping(bytes32 circleId => int256 balance)
         public idToCircleAmountLeftToRaise;
 
+    // Mapping of user address to their contribution count
     mapping(address user => uint16 contributionCount)
         public userToContributionCount;
+    // Mapping of user address to their repayment count
     mapping(address user => uint16 repaymentCount) public userToRepaymentCount;
+    // Mapping of user address to their number of failed repayments
     mapping(address user => uint8 numFailedRepayments)
         public userToFailedRepaymentCount;
 
+    // Enum to represent the state of a circle
     enum CircleState {
         Active,
         Killed,
         Redeemed
     }
 
+    // Struct to store contribution details
     struct ContributionDeets {
         address contributor;
         int256 contributionAmount;
         bytes32 circleId;
     }
 
+    // Struct to store circle data
     struct CircleData {
         address creator;
         uint96 fundGoalValue;
@@ -109,6 +143,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         bool isUSDC;
     }
 
+    // Event emitted when a new circle is created
     event CircleCreated(
         address creator,
         bytes32 circleId,
@@ -119,6 +154,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint16 builderScore
     );
 
+    // Event emitted when a contribution is made to a circle
     event CircleContribution(
         address contributor,
         int256 contributionAmount,
@@ -127,38 +163,64 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         bytes32 circleId
     );
 
-    event CircleFundRedeemed(
-        address creator,
-        uint256 redemptionAmount,
-        bytes32 circleId
-    );
-
-    event CircleKilled(
-        address creator,
-        uint256 circleRaisedAmount,
-        bytes32 circleId
-    );
-
-    event RepaymentFailed(
-        address creator,
-        uint8 paymentFailureCount,
-        bytes32 circleId,
-        uint256 timeStamp
-    );
-    event RepaymentSuccessful(
-        address creator,
-        bytes32 circleId,
-        uint256 paybackAmount,
-        uint256 timestamp
-    );
-    event CircleKilled(address creator, bytes32 circleId, uint256 timestamp);
+    // Event emitted when a circle is redeemed
     event CircleRedeemed(
         address creator,
         bytes32 circleId,
         uint96 amountRaised,
         uint256 timestamp
     );
+    // Event emitted when a circle is killed
+    event CircleKilled(address creator, bytes32 circleId, uint256 timestamp);
 
+    // Event emitted when a repayment fails
+    event RepaymentFailed(
+        address creator,
+        uint8 paymentFailureCount,
+        bytes32 circleId,
+        uint256 timeStamp
+    );
+    // Event emitted when a repayment is successful
+    event RepaymentSuccessful(
+        address creator,
+        bytes32 circleId,
+        uint256 paybackAmount,
+        uint256 timestamp
+    );
+
+    // Event emitted when a user's collateral is unlocked
+    event UserCollateralUnlocked(
+        address user,
+        bytes32 circleId,
+        uint256 amount,
+        uint256 timestamp
+    );
+
+    // Event emitted when a user redeems their contribution
+    event UserContributionRedeemed(
+        address user,
+        bytes32 contributionId,
+        uint256 amount,
+        uint256 timestamp
+    );
+
+    // Event emitted when a user is banned from the platform
+    event UserBanned(
+        address user,
+        uint256 timestamp,
+        uint8 userFailedRepaymentCount
+    );
+
+    // Event emitted when the circle threshold values are updated
+    event CircleThresholdUpdated(
+        uint256 newAllyGoalValueThreshold,
+        uint256 newGuardianGoalValueThreshold
+    );
+
+    /**
+     * @dev Modifier to check if the user is not banned
+     * @notice Reverts if the user is banned from the platform
+     */
     modifier notBanned() {
         if (isUserBanned[msg.sender]) {
             revert QQuest__UserAlreadyBannedFromPlatform();
@@ -166,6 +228,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         _;
     }
 
+    /**
+     * @dev Modifier to check if the user is eligible based on builder score or contribution count
+     * @param builderScore The builder score of the user
+     * @notice Reverts if the user doesn't meet the minimum eligibility criteria
+     */
     modifier validEligibility(uint16 builderScore) {
         if (
             builderScore < MIN_BUILDER_SCORE &&
@@ -220,22 +287,29 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint16 builderScore,
         bool isUSDC
     ) public payable notBanned validEligibility(builderScore) {
+        // Check if lead time is in the future
         if (leadTimeDuration < block.timestamp)
             revert QQuest__LeadTimeCanOnlyBeInFuture();
+        // Ensure payment due date is within maximum allowed duration
         if (paymentDueBy > (block.timestamp + MAX_DUE_DURATION))
             revert QQuest__DueDurationBeyondMaximum();
 
+        // Verify lead duration is within allowed limit
         if (leadTimeDuration > (block.timestamp + MAX_LEAD_DURATIONS))
             revert QQuest__LeadDurationBeyondMaximum();
+        // Validate user's membership tier and goal amount
         validateMembershipAndGoal(goalValueToRaise);
 
+        // Calculate required collateral amount
         uint96 collateralAmount = calculateCollateral(
             collateralPriceFeedAddress,
             paymentDueBy,
             goalValueToRaise
         );
 
+        // Ensure sufficient collateral is provided
         validateCollateral(collateralAmount);
+        // Generate unique identifier for the circle
         bytes32 circleId = createCircleId(
             msg.sender,
             goalValueToRaise,
@@ -244,6 +318,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             builderScore
         );
 
+        // Store circle data in contract storage
         idToUserCircleData[circleId] = CircleData(
             msg.sender,
             goalValueToRaise,
@@ -255,6 +330,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             isUSDC
         );
 
+        // Emit event for circle creation
         emit CircleCreated(
             msg.sender,
             circleId,
@@ -265,6 +341,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             builderScore
         );
 
+        // Initialize the amount left to raise for this circle
         idToCircleAmountLeftToRaise[circleId] = int96(goalValueToRaise);
     }
 
@@ -280,25 +357,32 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         bytes32 circleId,
         int256 amountToContribute
     ) public notBanned {
+        // Retrieve circle data and remaining amount to raise
         CircleData memory circle = idToUserCircleData[circleId];
         int256 balanceAmountToRaise = idToCircleAmountLeftToRaise[circleId];
 
+        // Check if the circle exists and is active
         if (circle.creator == address(0)) revert QQuest__InvalidCircleId();
         if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
 
+        // Ensure the contribution is within the lead time
         if (block.timestamp > circle.leadTimeDuration) {
             revert QQuest__CircleDurationOver();
         }
+        // Check if the contributor meets the minimum builder score requirement
         if (builderScore < MIN_BUILDER_SCORE) {
             revert QQuest__IneligibleForCircling();
         }
 
+        // Ensure the contribution doesn't exceed the remaining amount to raise
         if ((balanceAmountToRaise - amountToContribute) < 0) {
             revert QQuest__ContributionAmountTooHigh();
         }
 
+        // Update the remaining amount to raise for the circle
         idToCircleAmountLeftToRaise[circleId] -= amountToContribute;
 
+        // Generate a unique contribution ID
         bytes32 contributionId = keccak256(
             abi.encodePacked(
                 msg.sender,
@@ -309,16 +393,20 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             )
         );
 
+        // Store contribution details
         idToContributionDeets[contributionId] = ContributionDeets(
             msg.sender,
             amountToContribute,
             circleId
         );
+        // Increment the user's contribution count
         userToContributionCount[msg.sender] += 1;
+        // Update the user's reputation score
         updateUserReputation(
             userToContributionCount[msg.sender],
             userToRepaymentCount[msg.sender]
         );
+        // Emit an event for the contribution
         emit CircleContribution(
             msg.sender,
             amountToContribute,
@@ -327,10 +415,12 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             circleId
         );
 
+        // Determine which token to use (USDC or USDT)
         IERC20 token = circle.isUSDC
             ? IERC20(i_usdcAddress)
             : IERC20(i_usdtAddress);
 
+        // Transfer the contribution amount from the user to the contract
         token.transferFrom(
             msg.sender,
             address(this),
@@ -456,6 +546,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint256 requiredCollateral = (uint256(cltrAmount) * (1e18 / PRECISION));
         idToUserCircleData[circleId].collateralAmount = 0;
 
+        emit UserCollateralUnlocked(
+            circle.creator,
+            circleId,
+            requiredCollateral,
+            block.timestamp
+        );
+
         (bool success, ) = payable(circle.creator).call{
             value: requiredCollateral
         }("");
@@ -494,6 +591,13 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         IERC20 token = circle.isUSDC
             ? IERC20(i_usdcAddress)
             : IERC20(i_usdtAddress);
+
+        emit UserContributionRedeemed(
+            msg.sender,
+            contributionId,
+            uint256(contributionDeets.contributionAmount),
+            block.timestamp
+        );
 
         token.transfer(
             msg.sender,
@@ -547,6 +651,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         if (userToFailedRepaymentCount[user] <= 1) {
             revert QQuest__UserCantBePenalised();
         }
+        emit UserBanned(
+            user,
+            block.timestamp,
+            userToFailedRepaymentCount[user]
+        );
         isUserBanned[user] = true;
     }
 
@@ -571,6 +680,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             allyGoalValueThreshold = allyNewThreshold;
             guardianGoalValueThreshold = guardianNewThreshold;
         }
+        emit CircleThresholdUpdated(allyNewThreshold, guardianNewThreshold);
     }
 
     /**
