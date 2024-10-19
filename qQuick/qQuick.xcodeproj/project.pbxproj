@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		929EF8652CC358B40009CFCB /* metamask-ios-sdk in Frameworks */ = {isa = PBXBuildFile; productRef = 929EF8642CC358B40009CFCB /* metamask-ios-sdk */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		929EF8142CC2B8BB0009CFCB /* qQuick.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = qQuick.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				929EF8652CC358B40009CFCB /* metamask-ios-sdk in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = qQuick;
 			packageProductDependencies = (
+				929EF8642CC358B40009CFCB /* metamask-ios-sdk */,
 			);
 			productName = qQuick;
 			productReference = 929EF8142CC2B8BB0009CFCB /* qQuick.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 929EF80B2CC2B8BB0009CFCB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				929EF8632CC358B40009CFCB /* XCRemoteSwiftPackageReference "metamask-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 929EF8152CC2B8BB0009CFCB /* Products */;
 			projectDirPath = "";
@@ -268,10 +277,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.basedIndia.qQuick;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -305,10 +315,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.basedIndia.qQuick;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -335,6 +346,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		929EF8632CC358B40009CFCB /* XCRemoteSwiftPackageReference "metamask-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/MetaMask/metamask-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.10;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		929EF8642CC358B40009CFCB /* metamask-ios-sdk */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 929EF8632CC358B40009CFCB /* XCRemoteSwiftPackageReference "metamask-ios-sdk" */;
+			productName = "metamask-ios-sdk";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 929EF80C2CC2B8BB0009CFCB /* Project object */;
 }

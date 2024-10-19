@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct CircleCard: View {
     var title: String
     var raisedAmount: Double
@@ -40,7 +41,8 @@ struct CircleCard: View {
                 .padding(.vertical, 5)
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.gray
+            .opacity(0.2))
         .cornerRadius(10)
         .shadow(radius: 5)
     }

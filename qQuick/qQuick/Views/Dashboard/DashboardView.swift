@@ -13,8 +13,17 @@ struct DashboardView: View {
             Text("Dashboard Content Goes Here")
                 .foregroundColor(.white)
         }
-        .navigationBarTitle("qQuick")
-        .background(Color.black.edgesIgnoringSafeArea(.all))
+        .toolbar{
+            ToolbarItem(placement: .cancellationAction) {
+                Text("qQuick")
+                    .font(.title)
+            }
+            
+            ToolbarItem(placement: .confirmationAction) {
+                Image(systemName: "bell")
+                    .foregroundColor(.white)
+            }
+        }
     }
 }
 
