@@ -22,16 +22,23 @@ struct CustomTabBar: View {
             DashboardView()
                 .tabItem {
                     Image(systemName: "chart.bar.fill")
-                    Text("Dashboard")
+                    Text("Rewards")
                 }
                 .tag(1)
 
+            RewardsView()
+                .tabItem {
+                    Image(systemName: "gift")
+                    Text("Profile")
+                }
+                .tag(2)
+            
             ProfileView()
                 .tabItem {
                     Image(systemName: "person.fill")
                     Text("Profile")
                 }
-                .tag(2)
+                .tag(3)
         }
     }
 }
