@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
-import CustomConnectButton from "@/components/ConnectButton";
+
+import { CommonButon } from "@/ConnectKit/ConnectKitButton";
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -73,7 +74,7 @@ export default function Home() {
         P2P interest free funding circles for crypto
       </h2>
       <p className="text-gray-400 mb-8">Keep your assets, get liquidity</p>
-      <CustomConnectButton />
+      <CommonButon />
       <p className="text-xs text-gray-500 mt-4 text-center">
         By connecting, I accept the Terms & Conditions and Privacy Policy
       </p>

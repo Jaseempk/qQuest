@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { writeContract, getAccount, createConfig, http } from "@wagmi/core";
+import { writeContract, getAccount } from "@wagmi/core";
 
-import { base, baseSepolia } from "@wagmi/core/chains";
 import { membershipContractAddress, abi } from "@/abi/MembershipAbi";
+import { config } from "@/ConnectKit/Web3Provider";
 
 // Replace these with your actual contract details
 const CONTRACT_ADDRESS = membershipContractAddress;
@@ -14,17 +14,6 @@ const CONTRACT_ABI = abi;
 export default function GetStarted() {
   const [name, setName] = useState("");
   const router = useRouter();
-  const config = createConfig({
-    chains: [base, baseSepolia],
-    transports: {
-      [base.id]: http(
-        "https://base-mainnet.g.alchemy.com/v2/txntl9XYKWyIkkmj1p0JcecUKxqt9327"
-      ),
-      [baseSepolia.id]: http(
-        "https://base-sepolia.g.alchemy.com/v2/txntl9XYKWyIkkmj1p0JcecUKxqt9327"
-      ),
-    },
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
