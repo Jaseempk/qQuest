@@ -1,5 +1,5 @@
 {
-  "originHash" : "4e058f4d69bbc60bae856285f09af01ec099e1e1b03c0dc660c965cecb77e434",
+  "originHash" : "c81393062480ba15d5698f951e14d2f035520c6417e8dd9bb10506bf51c9953d",
   "pins" : [
     {
       "identity" : "metamask-ios-sdk",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "c6bfd1af48efcc9a9ad203665db12375ba6b145a",
         "version" : "4.0.8"
+      }
+    },
+    {
+      "identity" : "wallet-mobile-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/MobileWalletProtocol/wallet-mobile-sdk.git",
+      "state" : {
+        "revision" : "4293df51d3500b8e876ca4bf0d7548adf097569a",
+        "version" : "1.1.2"
       }
     }
   ],

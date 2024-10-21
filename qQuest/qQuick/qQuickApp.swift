@@ -6,12 +6,17 @@
 //
 
 import SwiftUI
+import CoinbaseWalletSDK
 
 @main
 struct qQuickApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onOpenURL { url in
+                    print("Opened URL: \(url.absoluteString)")
+                    _ = try? CoinbaseWalletSDK.shared.handleResponse(url)
+                }
         }
     }
 }
