@@ -37,15 +37,15 @@ export default function Home() {
       console.log("builder-score:", builderScore);
 
       if (builderScore === 0) {
-        router.push("/zero-score");
+        router.push("/pages/zero-score");
       } else if (builderScore > 0 && builderScore < 19) {
-        router.push("/low-score");
+        router.push("/pages/low-score");
       } else {
-        router.push("/get-started");
+        router.push("/pages/get-started");
       }
     } catch (error) {
       console.error("Error fetching builder score:", error);
-      router.push("/zero-score");
+      router.push("/pages/zero-score");
     } finally {
       setIsLoading(false);
     }
