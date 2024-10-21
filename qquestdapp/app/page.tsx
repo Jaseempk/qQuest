@@ -14,6 +14,7 @@ export default function Home() {
   useEffect(() => {
     if (isConnected && address) {
       checkBuilderScore();
+      console.log("hiii....");
     }
   }, [isConnected, address]);
 
@@ -25,18 +26,19 @@ export default function Home() {
         {
           method: "GET",
           headers: {
-            "api-key":
+            "x-api-key":
               "aa96ca991e7766834efe5e4caee803866a1c67dad2d11016b11d56f77a1a",
           },
         }
       );
       const data = await response.json();
       const builderScore = data.passport.score;
+      console.log("data:", data);
       console.log("builder-score:", builderScore);
 
       if (builderScore === 0) {
         router.push("/zero-score");
-      } else if (builderScore > 0 && builderScore < 25) {
+      } else if (builderScore > 0 && builderScore < 19) {
         router.push("/low-score");
       } else {
         router.push("/get-started");
