@@ -45,6 +45,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error fetching builder score:", error);
+      router.push("/zero-score");
     } finally {
       setIsLoading(false);
     }

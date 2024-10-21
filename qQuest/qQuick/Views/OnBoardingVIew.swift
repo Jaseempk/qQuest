@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct OnboardingView: View {
-    // State variable to control navigation
     @State private var navigateToCustomTabBar = false
+    @StateObject private var coinbaseRepo = CoinbaseRepo()
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -26,10 +26,13 @@ struct OnboardingView: View {
             
             // Button to trigger navigation
             Button(action: {
+                Task {
+                                    try await coinbaseRepo.connectToCoinbase()
+                                }
                 // Trigger navigation to CustomTabBar
                 navigateToCustomTabBar = true
             }) {
-                Text("Connect Wallet")
+                Text("Connect to Coinbase Wallet")
                     .font(.headline)
                     .padding()
                     .frame(maxWidth: .infinity)
