@@ -65,7 +65,7 @@ qQuest is a peer-to-peer platform that leverages social trust, reputation, and c
    - Collateral released upon full repayment
    - Reputation scores updated for all participants
 
-   6. **Fee Collection and Distribution**:
+6. **Fee Collection and Distribution**:
 
    - borrowers pay a small platform fee upon successful debt repayment
    - Fees accumulate in the platform fee revenue pool
@@ -76,6 +76,7 @@ qQuest is a peer-to-peer platform that leverages social trust, reputation, and c
 
 - Smart Contracts: Solidity
 - Development Framework: Foundry
+- Subgraphs:The graph
 - Frontend: Next with Web3 integration
 - Blockchain: Deployed on Base (Ethereum Layer 2)
 
