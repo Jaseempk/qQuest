@@ -25,7 +25,7 @@ export default function Home() {
         {
           method: "GET",
           headers: {
-            "api-key":
+            "x-api-key":
               "aa96ca991e7766834efe5e4caee803866a1c67dad2d11016b11d56f77a1a",
           },
         }
@@ -43,6 +43,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error fetching builder score:", error);
+      router.push("/zero-score");
     } finally {
       setIsLoading(false);
     }
