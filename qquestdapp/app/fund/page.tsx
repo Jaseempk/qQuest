@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Bell } from "lucide-react";
-import FundingDetails from "@/components/FundingDetails";
+import FundingDetails from "../../components/FundingDetails";
 import NumericKeypad from "@/components/NumericKeypad";
 
 export default function FundPage() {

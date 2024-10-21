@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Bell } from "lucide-react";
-import CreateCircleForm from "@/components/CreateCircleForm";
-import CircleCreatedSuccess from "@/components/CircleCreatedSuccess";
+import CreateCircleForm from "../../components/CreateCircleForm";
+import CircleCreatedSuccess from "../../components/CircleCreatedSuccess";
 
 export default function CreateCirclePage() {
   const [isSuccess, setIsSuccess] = useState(false);
