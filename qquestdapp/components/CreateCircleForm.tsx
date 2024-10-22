@@ -15,16 +15,29 @@ import { CalendarIcon, AlertTriangle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ethers } from "ethers";
-import { writeContract, simulateContract, getAccount } from "@wagmi/core";
+import {
+  writeContract,
+  simulateContract,
+  getAccount,
+  readContract,
+} from "@wagmi/core";
 import { config } from "@/ConnectKit/Web3Provider";
 import {
   circleContractAddress,
   abi,
   collateralPriceFeedAddress,
 } from "@/abi/CircleAbi";
+import { parseEther } from "viem";
+
 import { supabase } from "../supabaseConfig";
 
-export default async function CreateCircleForm() {
+interface CreateCircleFormProps {
+  setIsSuccess: (value: boolean) => void;
+}
+
+export default function CreateCircleForm({
+  setIsSuccess,
+}: CreateCircleFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [leadTime, setLeadTime] = useState<Date>();
@@ -121,7 +134,9 @@ export default async function CreateCircleForm() {
           builderScore, // builderScore - using dummy value
         ]
       );
+      console.log("encodedParams:", encodedParams);
       setCircleId(encodedParams);
+      return encodedParams;
     } catch (error) {
       console.error("Error calculating circleId:", error);
     }
@@ -129,53 +144,84 @@ export default async function CreateCircleForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({
-      title,
-      description,
-      leadTime,
-      leadTimeEpoch,
-      repaymentDate,
-      repaymentDateEpoch,
-      amount,
-      collateralAmount,
-      repaymentDuration,
-    });
-    const { request } = await simulateContract(config, {
-      abi,
-      address: circleContractAddress,
-      functionName: "createNewCircle",
-      args: [
-        collateralPriceFeedAddress,
-        amount,
+    try {
+      console.log({
+        title,
+        description,
+        leadTime,
         leadTimeEpoch,
+        repaymentDate,
         repaymentDateEpoch,
-        builderScore,
-        true,
-      ],
-    });
-    const hash = await writeContract(config, request);
+        amount,
+        collateralAmount,
+        repaymentDuration,
+      });
+      console.log("account:", account);
+      const _collateralAmount = await readContract(config, {
+        abi,
+        address: circleContractAddress,
+        functionName: "calculateCollateral",
+        args: [collateralPriceFeedAddress, repaymentDateEpoch, amount],
+      });
+      console.log("collateral:", _collateralAmount);
+      const actualValue = Number(_collateralAmount) / 1000;
+      // Simulate contract first
+      const { request } = await simulateContract(config, {
+        abi,
+        address: circleContractAddress,
+        functionName: "createNewCircle",
+        args: [
+          collateralPriceFeedAddress,
+          amount,
+          leadTimeEpoch,
+          repaymentDateEpoch,
+          79,
+          true,
+        ],
+        value: parseEther(actualValue.toString()),
+      });
 
-    //need to fetch the circleId and update the supabase table
-    await calculateCircleId();
+      // Write to contract and wait for transaction
+      const hash = await writeContract(config, request);
 
-    const { data, error } = await supabase
-      .from("qQuestCircle")
-      .insert([
-        {
-          circleId: circleId,
-          address: account?.address,
-          circleGoalAmount: amount,
-          leadTime: leadTimeEpoch,
-          dueTime: repaymentDateEpoch,
-          title: title,
-          description: description,
-          builderScore: builderScore,
-        },
-      ])
-      .select();
+      // Only proceed with Supabase update if contract write is successful
+      if (hash) {
+        // Calculate circleId after successful contract write
+        const encodedParam = await calculateCircleId();
 
-    console.log("data:", data);
-    console.log("error:", error);
+        // Update Supabase
+        const { data, error } = await supabase
+          .from("qQuestCircleDeets")
+          .insert([
+            {
+              circleId: encodedParam,
+              amountToRaise: amount,
+              user: account?.address,
+              title: title,
+              description: description,
+              builderScore: builderScore,
+            },
+          ])
+          .select();
+        setIsSuccess(true);
+
+        if (error) {
+          console.error("Supabase insert error:", error);
+          throw new Error(
+            "Failed to update database after successful contract creation"
+          );
+        }
+
+        console.log("Circle created successfully:", {
+          transactionHash: hash,
+          supabaseData: data,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating circle:", error);
+      // Here you might want to add user notification logic
+      throw error; // Re-throw to be handled by parent error boundary if needed
+    }
   };
 
   return (

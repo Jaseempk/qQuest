@@ -6,7 +6,7 @@ import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 export const config = createConfig(
   getDefaultConfig({
     // Your dApps chains
-    chains: [baseSepolia, base],
+    chains: [baseSepolia],
     transports: {
       // RPC URL for each chain
       [baseSepolia.id]: http(

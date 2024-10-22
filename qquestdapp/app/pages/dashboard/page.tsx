@@ -1,10 +1,10 @@
-"use client";
+("use client");
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Bell, Home, BarChart2, Gift, User, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { supabase } from "@/supabaseConfig";
 
 interface FundingRequest {
   id: string;
@@ -20,7 +20,17 @@ interface FundingRequest {
 }
 
 const FundingRequestCard = ({ request }: { request: FundingRequest }) => {
+  // Calculate progress dynamically
   const progress = (request.amountRaised / request.targetAmount) * 100;
+
+  // Calculate days remaining dynamically
+  const calculateDaysRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
 
   return (
     <div className="bg-gray-900 rounded-lg p-4 mb-4">
@@ -83,49 +93,82 @@ const FundingRequestCard = ({ request }: { request: FundingRequest }) => {
 };
 
 export default function Dashboard() {
-  const [fundingRequests, setFundingRequests] = useState<FundingRequest[]>([
-    {
-      id: "1",
-      title: "Buy sneakers",
-      description: "For new Travis scott sneakers",
-      userName: "Jesse pollak",
-      userScore: 723,
-      amountRaised: 250,
-      targetAmount: 1000,
-      daysRemaining: 6,
-      backers: 20,
-      termPeriod: "2 Months",
-    },
-    {
-      id: "2",
-      title: "Buy groceries",
-      description: "For weekend barbecue",
-      userName: "Ella Davis",
-      userScore: 723,
-      amountRaised: 240,
-      targetAmount: 300,
-      daysRemaining: 3,
-      backers: 15,
-      termPeriod: "2 Months",
-    },
-    {
-      id: "3",
-      title: "Book flight",
-      description: "To Paris for vacation",
-      userName: "Sophie Johnson",
-      userScore: 723,
-      amountRaised: 500,
-      targetAmount: 1000,
-      daysRemaining: 14,
-      backers: 25,
-      termPeriod: "2 Months",
-    },
-  ]);
-  const router = useRouter();
-  const onPlusClick = () => {
-    console.log("heey");
-    router.push("/pages/create-circle");
+  const [fundingRequests, setFundingRequests] = useState<FundingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Calculate days remaining dynamically
+  const calculateDaysRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
   };
+
+  useEffect(() => {
+    fetchFundingRequests();
+  }, []);
+
+  const fetchFundingRequests = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch funding requests from Supabase
+      const { data, error } = await supabase
+        .from("qQuestCircleDeets")
+        .select(
+          `
+          id,
+          title,
+          description,
+          users (
+            name,
+            score
+          ),
+          amountToRaise,
+          end_date,
+          backers,
+          term_period
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Transform the data to match our FundingRequest interface
+      const transformedData: FundingRequest[] = data.map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        userName: item.users.name,
+        userScore: item.users.score,
+        amountRaised: item.amount_raised,
+        targetAmount: item.amountToRaise,
+        daysRemaining: calculateDaysRemaining(item.end_date),
+        backers: item.backers,
+        termPeriod: item.term_period,
+      }));
+
+      setFundingRequests(transformedData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white p-4">Loading...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black text-white p-4">Error: {error}</div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white pb-16">
@@ -156,10 +199,7 @@ export default function Dashboard() {
           <span className="text-xs">Profile</span>
         </Link>
       </nav>
-      <button
-        onClick={onPlusClick}
-        className="fixed bottom-20 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg"
-      >
+      <button className="fixed bottom-20 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg">
         <Plus className="w-6 h-6" />
       </button>
     </div>

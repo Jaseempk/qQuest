@@ -8,11 +8,6 @@ import CircleCreatedSuccess from "../../../components/CircleCreatedSuccess";
 export default function CreateCirclePage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleCreateCircle = () => {
-    // Simulating circle creation
-    setIsSuccess(true);
-  };
-
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="flex justify-between items-center mb-6">
@@ -20,7 +15,7 @@ export default function CreateCirclePage() {
       </div>
       {!isSuccess ? (
         <>
-          <CreateCircleForm />
+          <CreateCircleForm setIsSuccess={setIsSuccess} />
         </>
       ) : (
         <CircleCreatedSuccess
