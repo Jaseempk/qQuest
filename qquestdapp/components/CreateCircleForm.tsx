@@ -14,9 +14,17 @@ import {
 import { CalendarIcon, AlertTriangle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { abi, membershipContractAddress } from "../abi/MembershipAbi";
+import { ethers } from "ethers";
+import { writeContract, simulateContract, getAccount } from "@wagmi/core";
+import { config } from "@/ConnectKit/Web3Provider";
+import {
+  circleContractAddress,
+  abi,
+  collateralPriceFeedAddress,
+} from "@/abi/CircleAbi";
+import { supabase } from "../supabaseConfig";
 
-export default function CreateCircleForm() {
+export default async function CreateCircleForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [leadTime, setLeadTime] = useState<Date>();
@@ -27,10 +35,13 @@ export default function CreateCircleForm() {
   const [collateralAmount, setCollateralAmount] = useState(0);
   const [repaymentDuration, setRepaymentDuration] = useState<number>(0);
   const [showWarning, setShowWarning] = useState(false);
+  const [circleId, setCircleId] = useState<string>("");
+  const [builderScore, setBuilderScore] = useState<number | null>(null);
 
   // Calculate repayment duration and collateral whenever dates change
   useEffect(() => {
     if (leadTime && repaymentDate) {
+      console.log("env:", process.env.SUPABASE_KEY);
       const duration = differenceInDays(repaymentDate, leadTime);
       setRepaymentDuration(duration);
 
@@ -48,6 +59,30 @@ export default function CreateCircleForm() {
       setShowWarning(duration > 60);
     }
   }, [leadTime, repaymentDate, amount]);
+
+  useEffect(() => {
+    const fetchBuilderScore = async () => {
+      try {
+        const account = getAccount(config);
+        const response = await fetch(
+          `https://api.talentprotocol.com/api/v2/passports/${account.address}`,
+          {
+            method: "GET",
+            headers: {
+              "x-api-key":
+                "aa96ca991e7766834efe5e4caee803866a1c67dad2d11016b11d56f77a1a",
+            },
+          }
+        );
+        const data = await response?.json();
+        setBuilderScore(data?.passport?.score);
+      } catch (error) {
+        console.error("Error fetching builder score:", error);
+      }
+    };
+
+    fetchBuilderScore();
+  }, []);
 
   const handleLeadTimeChange = (date: Date | undefined) => {
     setLeadTime(date);
@@ -72,8 +107,27 @@ export default function CreateCircleForm() {
     const ethAmount = collateralAmount / ethPrice;
     return `${ethAmount.toFixed(2)} ETH ($${collateralAmount.toFixed(2)})`;
   };
+  const account = getAccount(config);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const calculateCircleId = async () => {
+    try {
+      const encodedParams = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "uint256", "uint256", "uint256"],
+        [
+          account?.address,
+          amount,
+          leadTimeEpoch,
+          repaymentDateEpoch,
+          builderScore, // builderScore - using dummy value
+        ]
+      );
+      setCircleId(encodedParams);
+    } catch (error) {
+      console.error("Error calculating circleId:", error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log({
       title,
@@ -86,6 +140,42 @@ export default function CreateCircleForm() {
       collateralAmount,
       repaymentDuration,
     });
+    const { request } = await simulateContract(config, {
+      abi,
+      address: circleContractAddress,
+      functionName: "createNewCircle",
+      args: [
+        collateralPriceFeedAddress,
+        amount,
+        leadTimeEpoch,
+        repaymentDateEpoch,
+        builderScore,
+        true,
+      ],
+    });
+    const hash = await writeContract(config, request);
+
+    //need to fetch the circleId and update the supabase table
+    await calculateCircleId();
+
+    const { data, error } = await supabase
+      .from("qQuestCircle")
+      .insert([
+        {
+          circleId: circleId,
+          address: account?.address,
+          circleGoalAmount: amount,
+          leadTime: leadTimeEpoch,
+          dueTime: repaymentDateEpoch,
+          title: title,
+          description: description,
+          builderScore: builderScore,
+        },
+      ])
+      .select();
+
+    console.log("data:", data);
+    console.log("error:", error);
   };
 
   return (

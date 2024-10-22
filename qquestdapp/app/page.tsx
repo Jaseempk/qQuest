@@ -6,24 +6,49 @@ import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 
 import { CommonButon } from "@/ConnectKit/ConnectKitButton";
+import { readContract, getAccount } from "@wagmi/core";
+import {
+  abi,
+  membershipContractAddress,
+  ALLY_TOKEN_ID,
+} from "@/abi/MembershipAbi";
+import { config } from "@/ConnectKit/Web3Provider";
 
 export default function Home() {
   const { address, isConnected } = useAccount();
   const [isLoading, setIsLoading] = useState(false);
+  const [balance, setBalance] = useState(false);
+
   const router = useRouter();
+  const account = getAccount(config);
 
   useEffect(() => {
     if (isConnected && address) {
       checkBuilderScore();
-      console.log("hiii....");
     }
   }, [isConnected, address]);
+  const checkUserAllyBalance = async () => {
+    const result = await readContract(config, {
+      abi,
+      address: membershipContractAddress,
+      functionName: "balanceOf",
+      args: [account.address, ALLY_TOKEN_ID],
+    });
+    console.log("result:", result);
+    if (result !== 0) {
+      console.log("ingatt ingatt");
+      setBalance(true);
+      return true;
+    }
+    return false;
+  };
 
   const checkBuilderScore = async () => {
     setIsLoading(true);
+    const hasBalance = await checkUserAllyBalance();
     try {
       const response = await fetch(
-        `https://api.talentprotocol.com/api/v2/passports/${address}`,
+        `https://api.talentprotocol.com/api/v2/passports/${account?.address}`,
         {
           method: "GET",
           headers: {
@@ -42,7 +67,12 @@ export default function Home() {
       } else if (builderScore > 0 && builderScore < 19) {
         router.push("/pages/low-score");
       } else {
-        router.push("/pages/get-started");
+        console.log("balance:", balance);
+        if (hasBalance === true) {
+          router.push("/pages/dashboard");
+        } else {
+          router.push("/pages/get-started");
+        }
       }
     } catch (error) {
       console.error("Error fetching builder score:", error);
