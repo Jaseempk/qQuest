@@ -2,15 +2,53 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { writeContract, getAccount } from "@wagmi/core";
+import { writeContract, getAccount, simulateContract } from "@wagmi/core";
 
 import { membershipContractAddress, abi } from "@/abi/MembershipAbi";
 import { config } from "@/ConnectKit/Web3Provider";
+import { ethers } from "ethers";
 
 // Replace these with your actual contract details
 const CONTRACT_ADDRESS = membershipContractAddress;
 const CONTRACT_ABI = abi;
+const DOMAIN_NAME = "QQuest";
+const DOMAIN_VERSION = "1.11";
+const CHAIN_ID = 84532; // Replace with your chain ID
+const PRIVATE_KEY =
+  "fbf992b0e25ad29c85aae3d69fcb7f09240dd2588ecee449a4934b9e499102cc";
+const RPC_URL =
+  "https://base-sepolia.g.alchemy.com/v2/txntl9XYKWyIkkmj1p0JcecUKxqt9327";
 
+const ALLY_TOKEN_ID = "65108108121";
+
+// EIP-712 domain
+const domain = {
+  name: DOMAIN_NAME,
+  version: DOMAIN_VERSION,
+  chainId: CHAIN_ID,
+  verifyingContract: CONTRACT_ADDRESS,
+};
+
+// EIP-712 types
+const types = {
+  MintRequest: [
+    { name: "userAddress", type: "address" },
+    { name: "newTokenId", type: "uint256" },
+  ],
+};
+
+async function generateSignature(userAddress, newTokenId) {
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const signer = new ethers.Wallet(PRIVATE_KEY, provider);
+
+  const value = {
+    userAddress: userAddress,
+    newTokenId: newTokenId,
+  };
+
+  const signature = await signer.signTypedData(domain, types, value);
+  return signature;
+}
 export default function GetStarted() {
   const [name, setName] = useState("");
   const router = useRouter();
@@ -27,27 +65,29 @@ export default function GetStarted() {
         if (!account.address) throw new Error("No account connected");
 
         // Generate EIP-712 signature from the server
-        const signatureResponse = await fetch("/api/generateSignature", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userAddress: account.address }),
-        });
+        const signatureResponse = await generateSignature(
+          account.address,
+          ALLY_TOKEN_ID
+        );
 
-        if (!signatureResponse.ok) {
-          throw new Error("Failed to generate signature");
-        }
+        // if (!signatureResponse.ok) {
+        //   throw new Error("Failed to generate signature");
+        // }
 
-        const { signature } = await signatureResponse.json();
+        // const { signature } = await signatureResponse.json();
+        console.log("signature:", signatureResponse);
 
         // Call the createUserAccount function on the smart contract
-        const result = await writeContract(config, {
-          address: CONTRACT_ADDRESS,
-          abi: CONTRACT_ABI,
+        const { request } = await simulateContract(config, {
+          abi,
+          address: membershipContractAddress,
           functionName: "createUserAccount",
-          args: [100, signature], // Assuming 100 as a default builder score
+          args: [100, signatureResponse], // Assuming 100 as a default builder score
         });
 
-        console.log("Transaction hash:", result);
+        const hash = await writeContract(config, request);
+
+        console.log("Transaction hash:", hash);
 
         // // Wait for the transaction to be mined
         // await result.wait();
@@ -55,7 +95,7 @@ export default function GetStarted() {
         console.log("Transaction confirmed");
 
         // Redirect to dashboard or next step
-        router.push("/dashboard");
+        router.push("/pages/dashboard");
       } catch (error) {
         console.error("Error:", error);
         alert("Failed to create user account. Please try again.");

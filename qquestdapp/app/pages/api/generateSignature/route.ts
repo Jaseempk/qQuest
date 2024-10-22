@@ -8,6 +8,7 @@ const CONTRACT_ADDRESS = "0x54CDf5787f7b5B585687Fe83cD1A460fe5b94c7f"; // Replac
 const ALLY_TOKEN_ID = "65108108121";
 
 export async function POST(request: NextRequest) {
+  console.log("ibde ibde");
   const { userAddress } = await request.json();
 
   if (!userAddress || typeof userAddress !== "string") {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   // Create the data object
   const data = {
     userAddress: userAddress,
-    newTokenId: ALLY_TOKEN_ID, // Assuming ALLY_TOKEN_ID is 1
+    newTokenId: ALLY_TOKEN_ID,
   };
 
   try {

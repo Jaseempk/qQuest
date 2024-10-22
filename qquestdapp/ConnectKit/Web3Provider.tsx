@@ -1,12 +1,12 @@
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { mainnet, sepolia, baseSepolia } from "wagmi/chains";
+import { mainnet, base, baseSepolia } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 
 export const config = createConfig(
   getDefaultConfig({
     // Your dApps chains
-    chains: [sepolia, baseSepolia, mainnet],
+    chains: [baseSepolia, base],
     transports: {
       // RPC URL for each chain
       [baseSepolia.id]: http(

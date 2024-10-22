@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Bell, Home, BarChart2, Gift, User, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface FundingRequest {
   id: string;
@@ -120,6 +121,11 @@ export default function Dashboard() {
       termPeriod: "2 Months",
     },
   ]);
+  const router = useRouter();
+  const onPlusClick = () => {
+    console.log("heey");
+    router.push("/pages/create-circle");
+  };
 
   return (
     <div className="min-h-screen bg-black text-white pb-16">
@@ -150,7 +156,10 @@ export default function Dashboard() {
           <span className="text-xs">Profile</span>
         </Link>
       </nav>
-      <button className="fixed bottom-20 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg">
+      <button
+        onClick={onPlusClick}
+        className="fixed bottom-20 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg"
+      >
         <Plus className="w-6 h-6" />
       </button>
     </div>
