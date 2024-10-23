@@ -48,7 +48,7 @@ export default function CircleCreatedSuccess({
           Peers can add fund to your circle
         </p>
       </div>
-      <Link href="/home" className="w-full">
+      <Link href="/dashboard" className="w-full">
         <button className="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold">
           Go home
         </button>

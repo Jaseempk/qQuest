@@ -24,6 +24,10 @@ interface FundingRequest {
 }
 
 const FundingRequestCard = ({ request }: { request: FundingRequest }) => {
+  const router = useRouter();
+  const onFundClick = () => {
+    router.push("/fund");
+  };
   // Calculate progress dynamically
   const progress = (request.amountRaised / request.targetAmount) * 100;
 
@@ -79,7 +83,10 @@ const FundingRequestCard = ({ request }: { request: FundingRequest }) => {
         <div className="text-sm text-gray-400">
           {request.daysRemaining} days remaining
         </div>
-        <button className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm">
+        <button
+          onClick={onFundClick}
+          className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm"
+        >
           Fund now
         </button>
       </div>

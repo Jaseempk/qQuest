@@ -275,11 +275,10 @@ export default function CreateCircleForm({
               title: title,
               description: description,
               builderScore: builderScore,
-              endTime: repaymentDate,
+              endDate: repaymentDate,
               leadTime: leadTime,
               termPeriod: repaymentDuration,
               userName: userName,
-              transactionHash: hash, // Adding transaction hash for reference
             },
           ])
           .select();
