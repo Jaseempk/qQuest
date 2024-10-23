@@ -50,6 +50,7 @@ export default function CreateCircleForm({
   const [showWarning, setShowWarning] = useState(false);
   const [circleId, setCircleId] = useState<string>("");
   const [builderScore, setBuilderScore] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string>("");
 
   // Calculate repayment duration and collateral whenever dates change
   useEffect(() => {
@@ -95,6 +96,26 @@ export default function CreateCircleForm({
     };
 
     fetchBuilderScore();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const account = getAccount(config);
+        console.log("address:", account.address);
+        let { data: qQuestUserProfile, error } = await supabase
+          .from("qQuestUserProfile")
+          .select("*")
+          .eq("userAddy", account?.address);
+        console.log("data:", qQuestUserProfile);
+        console.log("userName:", qQuestUserProfile[0]?.userName);
+        setUserName(qQuestUserProfile[0]?.userName);
+      } catch (error) {
+        console.error("Error fetching builder score:", error);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const handleLeadTimeChange = (date: Date | undefined) => {
@@ -200,6 +221,10 @@ export default function CreateCircleForm({
               title: title,
               description: description,
               builderScore: builderScore,
+              endTime: repaymentDate,
+              leadTime: leadTime,
+              termPeriod: repaymentDuration,
+              userName: userName,
             },
           ])
           .select();

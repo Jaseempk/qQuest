@@ -63,20 +63,20 @@ export default function Home() {
       console.log("builder-score:", builderScore);
 
       if (builderScore === 0) {
-        router.push("/pages/zero-score");
+        router.push("/zero-score");
       } else if (builderScore > 0 && builderScore < 19) {
-        router.push("/pages/low-score");
+        router.push("/low-score");
       } else {
         console.log("balance:", balance);
         if (hasBalance === true) {
-          router.push("/pages/dashboard");
+          router.push("/dashboard");
         } else {
-          router.push("/pages/get-started");
+          router.push("/get-started");
         }
       }
     } catch (error) {
       console.error("Error fetching builder score:", error);
-      router.push("/pages/zero-score");
+      router.push("/app/zero-score");
     } finally {
       setIsLoading(false);
     }
