@@ -27,6 +27,7 @@ import {
   abi,
   collateralPriceFeedAddress,
 } from "@/abi/CircleAbi";
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 import { parseEther } from "viem";
 
 import { supabase } from "../supabaseConfig";
@@ -163,6 +164,54 @@ export default function CreateCircleForm({
     }
   };
 
+  // Create an Apollo Client instance for The Graph
+  const client = new ApolloClient({
+    uri: "https://api.studio.thegraph.com/query/58232/qquestsubgraphs/version/latest", // Replace with your subgraph URL
+    cache: new InMemoryCache(),
+  });
+
+  // Query to fetch the latest circle created by a specific address
+  const GET_LATEST_CIRCLE = gql`
+    query GetLatestCircle($creatorAddress: Bytes!) {
+      circleCreateds(
+        first: 1
+        orderBy: blockTimestamp
+        orderDirection: desc
+        where: { creator: $creatorAddress }
+      ) {
+        circleId
+        creator
+        blockTimestamp
+        transactionHash
+      }
+    }
+  `;
+
+  // Function to fetch the latest circle ID
+  const fetchLatestCircleId = async (
+    creatorAddress: string
+  ): Promise<string> => {
+    try {
+      const { data } = await client.query({
+        query: GET_LATEST_CIRCLE,
+        variables: {
+          creatorAddress: creatorAddress.toLowerCase(),
+        },
+        fetchPolicy: "network-only", // This ensures we get fresh data from the subgraph
+      });
+
+      if (!data?.circleCreateds?.[0]) {
+        throw new Error("No circle found");
+      }
+
+      return data.circleCreateds[0].circleId;
+    } catch (error) {
+      console.error("Error fetching circle ID from The Graph:", error);
+      throw error;
+    }
+  };
+
+  // Modified handleSubmit function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -177,15 +226,16 @@ export default function CreateCircleForm({
         collateralAmount,
         repaymentDuration,
       });
-      console.log("account:", account);
+
       const _collateralAmount = await readContract(config, {
         abi,
         address: circleContractAddress,
         functionName: "calculateCollateral",
         args: [collateralPriceFeedAddress, repaymentDateEpoch, amount],
       });
-      console.log("collateral:", _collateralAmount);
+
       const actualValue = Number(_collateralAmount) / 1000;
+
       // Simulate contract first
       const { request } = await simulateContract(config, {
         abi,
@@ -205,17 +255,21 @@ export default function CreateCircleForm({
       // Write to contract and wait for transaction
       const hash = await writeContract(config, request);
 
-      // Only proceed with Supabase update if contract write is successful
       if (hash) {
-        // Calculate circleId after successful contract write
-        const encodedParam = await calculateCircleId();
+        // Wait for the transaction to be indexed by The Graph
+        // The time needed may vary based on network and indexing speed
+        await new Promise((resolve) => setTimeout(resolve, 15000));
 
-        // Update Supabase
+        // Fetch the actual circleId from The Graph
+        const circleId = await fetchLatestCircleId(account?.address || "");
+        console.log("circleId:", circleId);
+
+        // Update Supabase with the actual circleId
         const { data, error } = await supabase
           .from("qQuestCircleDeets")
           .insert([
             {
-              circleId: encodedParam,
+              circleId: circleId,
               amountToRaise: amount,
               user: account?.address,
               title: title,
@@ -225,9 +279,11 @@ export default function CreateCircleForm({
               leadTime: leadTime,
               termPeriod: repaymentDuration,
               userName: userName,
+              transactionHash: hash, // Adding transaction hash for reference
             },
           ])
           .select();
+
         setIsSuccess(true);
 
         if (error) {
@@ -240,15 +296,14 @@ export default function CreateCircleForm({
         console.log("Circle created successfully:", {
           transactionHash: hash,
           supabaseData: data,
+          circleId: circleId,
         });
       }
     } catch (error) {
       console.error("Error creating circle:", error);
-      // Here you might want to add user notification logic
-      throw error; // Re-throw to be handled by parent error boundary if needed
+      throw error;
     }
   };
-
   return (
     <div className="max-w-2xl mx-auto p-8 rounded-3xl">
       <h1 className="text-2xl font-bold mb-2">Create new circle</h1>

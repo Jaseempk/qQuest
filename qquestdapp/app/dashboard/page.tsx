@@ -193,6 +193,7 @@ export default function Dashboard() {
       );
 
       setFundingRequests(requestsWithAdditionalData);
+      console.log("fundingReqs:", fundingRequests);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
