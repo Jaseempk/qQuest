@@ -3,15 +3,16 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bell, Home, BarChart2, Gift, User, Plus } from "lucide-react";
 import { supabase } from "@/supabaseConfig";
-
 import { readContract } from "@wagmi/core";
 import { abi, circleContractAddress } from "@/abi/CircleAbi";
 import { config } from "@/ConnectKit/Web3Provider";
-import { useRouter } from "next/navigation";
+
 interface FundingRequest {
   id: string;
+  circleId: string;
   title: string;
   description: string;
   userName: string;
@@ -23,12 +24,13 @@ interface FundingRequest {
   termPeriod: string;
 }
 
-const FundingRequestCard = ({ request }: { request: FundingRequest }) => {
-  const router = useRouter();
-  const onFundClick = () => {
-    router.push("/fund");
-  };
-  // Calculate progress dynamically
+const FundingRequestCard = ({
+  request,
+  onFundClick,
+}: {
+  request: FundingRequest;
+  onFundClick: (request: FundingRequest) => void;
+}) => {
   const progress = (request.amountRaised / request.targetAmount) * 100;
 
   return (
@@ -84,7 +86,7 @@ const FundingRequestCard = ({ request }: { request: FundingRequest }) => {
           {request.daysRemaining} days remaining
         </div>
         <button
-          onClick={onFundClick}
+          onClick={() => onFundClick(request)}
           className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm"
         >
           Fund now
@@ -104,6 +106,10 @@ export default function Dashboard() {
     router.push("/create-circle");
   };
 
+  const onFundClick = (request: FundingRequest) => {
+    router.push(`/fund?circleId=${request.circleId}`);
+  };
+
   const calculateDaysRemaining = (endDate: string) => {
     const end = new Date(endDate);
     const now = new Date();
@@ -112,7 +118,6 @@ export default function Dashboard() {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // Function to fetch amount left to raise from smart contract
   const fetchAmountLeftToRaise = async (circleId: string) => {
     try {
       const amountLeft = await readContract(config, {
@@ -121,7 +126,6 @@ export default function Dashboard() {
         functionName: "idToCircleAmountLeftToRaise",
         args: [circleId],
       });
-
       return amountLeft;
     } catch (error) {
       console.error(
@@ -132,26 +136,14 @@ export default function Dashboard() {
     }
   };
 
-  // Function to fetch backers count (if you have this data somewhere)
   const fetchBackersCount = async (circleId: string) => {
-    try {
-      // Replace this with your actual backers count fetch logic
-      // This could be another contract call or database query
-      return 0; // Default value if not implemented
-    } catch (error) {
-      console.error(
-        `Error fetching backers count for circle ${circleId}:`,
-        error
-      );
-      return 0;
-    }
+    // Implement this based on your data source
+    return 0;
   };
 
   const fetchFundingRequests = async () => {
     try {
       setLoading(true);
-
-      // Fetch main funding request data
       const { data, error } = await supabase
         .from("qQuestCircleDeets")
         .select(
@@ -171,21 +163,16 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      // Fetch additional data for each request
       const requestsWithAdditionalData = await Promise.all(
         data.map(async (item) => {
-          // Fetch amount left to raise from smart contract
           const amountLeftToRaise = await fetchAmountLeftToRaise(item.circleId);
-
-          // Calculate amount raised by subtracting amount left from total amount
           const amountRaised =
             Number(item.amountToRaise) - Number(amountLeftToRaise);
-
-          // Fetch backers count (implement this based on your data source)
           const backersCount = await fetchBackersCount(item.circleId);
 
           return {
             id: item.id,
+            circleId: item.circleId,
             title: item.title,
             description: item.description,
             userName: item.userName,
@@ -200,7 +187,6 @@ export default function Dashboard() {
       );
 
       setFundingRequests(requestsWithAdditionalData);
-      console.log("fundingReqs:", fundingRequests);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -232,7 +218,11 @@ export default function Dashboard() {
       </header>
       <main className="p-4">
         {fundingRequests.map((request) => (
-          <FundingRequestCard key={request.id} request={request} />
+          <FundingRequestCard
+            key={request.id}
+            request={request}
+            onFundClick={onFundClick}
+          />
         ))}
       </main>
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 flex justify-around py-2">

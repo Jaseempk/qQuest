@@ -33,11 +33,16 @@ import { parseEther } from "viem";
 import { supabase } from "../supabaseConfig";
 
 interface CreateCircleFormProps {
-  setIsSuccess: (value: boolean) => void;
+  onCircleCreated: (data: {
+    title: string;
+    amount: number;
+    userName: string;
+    userScore: number;
+  }) => void;
 }
 
 export default function CreateCircleForm({
-  setIsSuccess,
+  onCircleCreated,
 }: CreateCircleFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -143,26 +148,6 @@ export default function CreateCircleForm({
     return `${ethAmount.toFixed(2)} ETH ($${collateralAmount.toFixed(2)})`;
   };
   const account = getAccount(config);
-
-  const calculateCircleId = async () => {
-    try {
-      const encodedParams = ethers.solidityPackedKeccak256(
-        ["address", "uint256", "uint256", "uint256", "uint256"],
-        [
-          account?.address,
-          amount,
-          leadTimeEpoch,
-          repaymentDateEpoch,
-          builderScore, // builderScore - using dummy value
-        ]
-      );
-      console.log("encodedParams:", encodedParams);
-      setCircleId(encodedParams);
-      return encodedParams;
-    } catch (error) {
-      console.error("Error calculating circleId:", error);
-    }
-  };
 
   // Create an Apollo Client instance for The Graph
   const client = new ApolloClient({
@@ -283,7 +268,12 @@ export default function CreateCircleForm({
           ])
           .select();
 
-        setIsSuccess(true);
+        onCircleCreated({
+          title,
+          amount,
+          userName,
+          userScore: builderScore || 0,
+        });
 
         if (error) {
           console.error("Supabase insert error:", error);
