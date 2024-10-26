@@ -35,17 +35,19 @@ export default function Home() {
       args: [account.address, ALLY_TOKEN_ID],
     });
     console.log("result:", result);
-    if (result !== 0) {
+    if (Number(result) !== 0) {
       console.log("ingatt ingatt");
       setBalance(true);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
   const checkBuilderScore = async () => {
     setIsLoading(true);
     const hasBalance = await checkUserAllyBalance();
+    console.log("hasBalance:", hasBalance);
     try {
       const response = await fetch(
         `https://api.talentprotocol.com/api/v2/passports/${account?.address}`,

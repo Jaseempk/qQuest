@@ -7,6 +7,17 @@ import { membershipContractAddress, abi } from "@/abi/MembershipAbi";
 import { config } from "@/ConnectKit/Web3Provider";
 import { ethers } from "ethers";
 import { supabase } from "@/supabaseConfig";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
+import { Info } from "lucide-react";
 
 const CONTRACT_ADDRESS = membershipContractAddress;
 const CONTRACT_ABI = abi;
@@ -70,16 +81,16 @@ export default function GetStarted() {
         throw new Error("No wallet connected");
       }
 
-      // // First check if user already exists
-      // const { data: existingUser } = await supabase
-      //   .from("qQuestUserProfile")
-      //   .select()
-      //   .eq("userAddy", account.address)
-      //   .single();
+      // First check if user already exists
+      const { data: existingUser } = await supabase
+        .from("qQuestUserProfile")
+        .select()
+        .eq("userAddy", account.address)
+        .single();
 
-      // if (existingUser) {
-      //   throw new Error("User profile already exists");
-      // }
+      if (existingUser) {
+        throw new Error("User profile already exists");
+      }
 
       // Generate EIP-712 signature
       const signatureResponse = await generateSignature(
@@ -136,29 +147,38 @@ export default function GetStarted() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black text-white">
-      <h1 className="text-3xl font-bold mb-2">Let's get started</h1>
-      <p className="text-gray-400 mb-8">
-        Please enter your name to personalize your experience.
-      </p>
-      <form onSubmit={handleSubmit} className="w-full max-w-md">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your name"
-          className="w-full p-3 mb-4 bg-gray-800 rounded-lg text-white"
-          required
-          disabled={isSubmitting}
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold disabled:bg-blue-400"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Creating account..." : "Continue"}
-        </button>
-      </form>
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-black to-blue-950 text-white">
+      <Card className="w-full max-w-md bg-gray-800/50 border-gray-700 backdrop-blur-sm  rounded-2xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+            Let's get started
+          </CardTitle>
+          <CardDescription className="text-gray-300">
+            Please enter your name to personalize your experience.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full p-3 bg-gray-700/50 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              disabled={isSubmitting}
+            />
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Creating account..." : "Continue"}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="text-center"></CardFooter>
+      </Card>
     </div>
   );
 }

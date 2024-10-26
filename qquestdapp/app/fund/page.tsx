@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Bell, CheckCircle, Home } from "lucide-react";
+import { Bell, CheckCircle, Home, Delete } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/supabaseConfig";
 import { readContract, writeContract, simulateContract } from "@wagmi/core";
@@ -98,6 +98,12 @@ const NumericKeypad: React.FC<{ onAmountChange: (amount: string) => void }> = ({
     let newAmount = amount;
     if (key === "." && !amount.includes(".")) {
       newAmount += ".";
+    } else if (key === "backspace") {
+      if (amount.length <= 1) {
+        newAmount = "0.000";
+      } else {
+        newAmount = amount.slice(0, -1);
+      }
     } else if (key !== ".") {
       if (amount === "0.000") {
         newAmount = key;
@@ -125,6 +131,12 @@ const NumericKeypad: React.FC<{ onAmountChange: (amount: string) => void }> = ({
             {key}
           </button>
         ))}
+        <button
+          className="bg-gray-800 text-white rounded-2xl py-4 text-xl font-semibold hover:bg-gray-700 transition-colors active:scale-95 transform duration-150 flex items-center justify-center"
+          onClick={() => handleKeyPress("backspace")}
+        >
+          <Delete className="w-6 h-6" />
+        </button>
       </div>
     </div>
   );
