@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -39,91 +38,217 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-//just mock-data
-const contributions = [
-  {
-    id: 1,
-    circleName: "Travel Fund",
-    amount: 500,
-    status: "Active",
-    dueDate: "2024-05-15",
-    members: 8,
-    reliability: 98,
-  },
-  {
-    id: 2,
-    circleName: "Emergency Savings",
-    amount: 1000,
-    status: "Repaid",
-    repaidDate: "2024-02-01",
-    members: 12,
-    reliability: 100,
-  },
-  {
-    id: 3,
-    circleName: "New Laptop",
-    amount: 800,
-    status: "Active",
-    dueDate: "2024-07-30",
-    members: 5,
-    reliability: 95,
-  },
-];
+import { readContract, getAccount } from "@wagmi/core";
+import { supabase } from "../../supabaseConfig";
+import { abi, circleContractAddress } from "../../abi/CircleAbi";
+import { formatDistanceToNow } from "date-fns";
+import { config } from "@/ConnectKit/Web3Provider";
 
-const activeCircles = [
-  {
-    id: 1,
-    name: "Home Renovation",
-    borrowed: 2000,
-    totalAmount: 5000,
-    dueDate: "2024-08-15",
-    members: 15,
-    reliability: 97,
-    nextPayment: 250,
-    paymentDate: "2024-04-01",
-  },
-  {
-    id: 2,
-    name: "Wedding Expenses",
-    borrowed: 3000,
-    totalAmount: 3000,
-    dueDate: "2024-06-30",
-    members: 10,
-    reliability: 94,
-    nextPayment: 500,
-    paymentDate: "2024-04-15",
-  },
-];
+interface CircleData {
+  creator: string;
+  fundGoalValue: number;
+  leadTimeDuration: number;
+  paymentDueBy: number;
+  collateralAmount: number;
+  state: number; // 0: Active, 1: Killed, 2: Redeemed
+  isRepaymentOnTime: boolean;
+  isUSDC: boolean;
+}
 
-const recentActivity = [
-  {
-    id: 1,
-    type: "payment",
-    description: "Monthly payment received",
-    amount: 250,
-    date: "2024-03-15",
-    circle: "Home Renovation",
-  },
-  {
-    id: 2,
-    type: "contribution",
-    description: "New contribution added",
-    amount: 300,
-    date: "2024-03-14",
-    circle: "Travel Fund",
-  },
-  {
-    id: 3,
-    type: "circle",
-    description: "Joined new circle",
-    circle: "Emergency Fund",
-    date: "2024-03-12",
-  },
-];
+interface ContributionDetails {
+  id: number;
+  circleName: string;
+  amount: number;
+  status: string;
+  dueDate: string;
+  members: number;
+  reliability: number;
+  repaidDate?: string;
+}
+
+interface CircleDetails {
+  id: number;
+  name: string;
+  borrowed: number;
+  totalAmount: number;
+  dueDate: string;
+  members: number;
+  reliability: number;
+  nextPayment: number;
+  paymentDate: string;
+}
+
+interface Activity {
+  id: number;
+  type: string;
+  description: string;
+  amount?: number;
+  date: string;
+  circle: string;
+}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [contributions, setContributions] = useState<ContributionDetails[]>([]);
+  const [activeCircles, setActiveCircles] = useState<CircleDetails[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [stats, setStats] = useState({
+    totalContributed: 0,
+    activeCirclesCount: 0,
+    totalBorrowed: 0,
+    nextPaymentDue: "",
+  });
   const router = useRouter();
+  const account = getAccount(config);
+  console.log("account:", account);
+  const getCircleState = async (circleId: string): Promise<CircleData> => {
+    try {
+      const data = await readContract(config, {
+        abi,
+        address: circleContractAddress,
+        functionName: "idToUserCircleData",
+        args: [circleId],
+      });
+      console.log("circleId:", circleId);
+      console.log("daata:", data);
+      return data as CircleData;
+    } catch (error) {
+      console.error("Error fetching circle state:", error);
+      throw error;
+    }
+  };
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const userAddress = account?.address;
+      if (!userAddress) throw new Error("Wallet not connected");
+
+      // Fetch user's contributions
+      const { data: contributionData, error: contributionError } =
+        await supabase
+          .from("qQuestContribution")
+          .select(
+            `
+        contributionId,
+        contributionAmount,
+        circleId,
+        qQuestCircleDeets:qQuestCircleDeets (
+          title,
+          endDate,
+          termPeriod,
+          userReputationScore
+        )
+      `
+          )
+          .eq("contributorAddress", userAddress);
+
+      if (contributionError) throw contributionError;
+
+      // Process contributions and fetch circle states
+      const processedContributions = await Promise.all(
+        contributionData.map(async (contribution) => {
+          const circleState = await getCircleState(contribution.circleId);
+          return {
+            id: contribution.contributionId,
+            circleName: contribution.qQuestCircleDeets.title,
+            amount: contribution.contributionAmount,
+            status: ["Active", "Killed", "Redeemed"][circleState.state],
+            dueDate: new Date(
+              contribution.qQuestCircleDeets.endDate
+            ).toLocaleDateString(),
+            members: 0, // You'll need to implement a way to track this
+            reliability: contribution.qQuestCircleDeets?.userReputationScore,
+            repaidDate:
+              circleState.state === 2
+                ? new Date().toLocaleDateString()
+                : undefined,
+          };
+        })
+      );
+      console.log("processedContributions:", processedContributions);
+
+      // Fetch circle details where user is creator
+      const { data: circleData, error: circleError } = await supabase
+        .from("qQuestCircleDeets")
+        .select("*")
+        .eq("user", userAddress);
+
+      if (circleError) throw circleError;
+
+      console.log("circleData:", circleData);
+
+      // Process circle data
+      const processedCircles = await Promise.all(
+        circleData.map(async (circle) => {
+          const amountLeftToRaise = await readContract(config, {
+            abi,
+            address: circleContractAddress,
+            functionName: "idToCircleAmountLeftToRaise",
+            args: [circle.circleId],
+          });
+
+          return {
+            id: circle.id,
+            name: circle.title,
+            borrowed: Number(circle.amountToRaise) - Number(amountLeftToRaise),
+            totalAmount: Number(circle.amountToRaise),
+            dueDate: new Date(circle.endDate).toLocaleDateString(),
+            members: 0, // Implement member counting
+            reliability: circle.userReputationScore,
+            nextPayment: Number(circle.amountToRaise) / circle.termPeriod,
+            paymentDate: formatDistanceToNow(new Date(circle.endDate), {
+              addSuffix: true,
+            }),
+          };
+        })
+      );
+      console.log("processedCircles:", processedCircles);
+
+      // Calculate stats
+      const totalContributed = processedContributions.reduce(
+        (acc, curr) => acc + curr.amount,
+        0
+      );
+      const totalBorrowed = processedCircles.reduce(
+        (acc, curr) => acc + curr.borrowed,
+        0
+      );
+
+      // Update state
+      setContributions(processedContributions);
+      setActiveCircles(processedCircles);
+      setStats({
+        totalContributed,
+        activeCirclesCount: processedCircles.length,
+        totalBorrowed,
+        nextPaymentDue: processedCircles[0]?.paymentDate || "No payments due",
+      });
+
+      // Set recent activity (you'll need to implement this based on your needs)
+      // This is just an example structure
+      setRecentActivity([
+        {
+          id: 1,
+          type: "payment",
+          description: "Monthly payment received",
+          amount: processedCircles[0]?.nextPayment || 0,
+          date: new Date().toLocaleDateString(),
+          circle: processedCircles[0]?.name || "Unknown",
+        },
+        // ... more activity items
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const handleRedeem = (contributionId: number) => {
     // Implement redeem logic
@@ -137,11 +262,12 @@ export default function Dashboard() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-900 via-gray-800 to-blue-900 text-white p-8">
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-900 via-gray-800 to-blue-900 text-white p-8 rounded-3xl">
         <header className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-indigo-300 text-transparent bg-clip-text">
-              Welcome back, Alex
+              Welcome back, {account?.address?.slice(0, 6)}...
+              {account?.address?.slice(-4)}
             </h1>
             <p className="text-gray-300">
               Here's an overview of your qQuest activity
@@ -149,7 +275,7 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={() => router.push("/circles/new")}
-            className="bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20"
+            className="bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-6 py-3"
           >
             Create New Circle
           </Button>
@@ -183,7 +309,7 @@ export default function Dashboard() {
 
           <TabsContent value="overview" className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10">
+              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-sm font-medium">
                     Total Contributed
@@ -191,7 +317,9 @@ export default function Dashboard() {
                   <Wallet className="h-4 w-4 text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$2,300</div>
+                  <div className="text-2xl font-bold">
+                    ${stats.totalContributed}
+                  </div>
                   <div className="flex items-center mt-1">
                     <TrendingUp className="h-4 w-4 text-green-400 mr-1" />
                     <p className="text-xs text-green-400">
@@ -201,7 +329,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10">
+              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl">
                 {" "}
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-sm font-medium">
@@ -220,7 +348,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10">
+              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl">
                 {" "}
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-sm font-medium">
@@ -241,7 +369,7 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm shadow-lg shadow-blue-900/10">
+              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm shadow-lg shadow-blue-900/10 rounded-3xl">
                 <CardHeader>
                   <CardTitle className="text-lg">Recent Activity</CardTitle>
                 </CardHeader>
@@ -251,8 +379,8 @@ export default function Dashboard() {
                       {recentActivity.map((activity) => (
                         <HoverCard key={activity.id}>
                           <HoverCardTrigger>
-                            <div className="flex items-center p-3 rounded-lg hover:bg-black/50 transition-all duration-200">
-                              <Avatar className="h-9 w-9">
+                            <div className="flex items-center p-3 rounded-2xl hover:bg-black/50 transition-all duration-200">
+                              <Avatar className="h-9 w-9 rounded-full">
                                 <AvatarImage
                                   src={`https://avatar.vercel.sh/${activity.circle}.png`}
                                   alt={activity.circle}
@@ -281,7 +409,7 @@ export default function Dashboard() {
                               )}
                             </div>
                           </HoverCardTrigger>
-                          <HoverCardContent className="w-80 bg-black/90 border-blue-900/20">
+                          <HoverCardContent className="w-80 bg-black/90 border-blue-900/20 rounded-2xl">
                             <div className="space-y-2">
                               <h4 className="text-sm font-semibold">
                                 {activity.circle}
@@ -304,7 +432,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm shadow-lg shadow-blue-900/10">
+              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm shadow-lg shadow-blue-900/10 rounded-3xl">
                 <CardHeader>
                   <CardTitle className="text-lg">Upcoming Payments</CardTitle>
                 </CardHeader>
@@ -314,7 +442,7 @@ export default function Dashboard() {
                       {activeCircles.map((circle) => (
                         <div
                           key={circle.id}
-                          className="p-4 rounded-lg bg-gray-900/80 hover:bg-gray-900/90 transition-all duration-200"
+                          className="p-4 rounded-2xl bg-gray-900/80 hover:bg-gray-900/90 transition-all duration-200"
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div>
@@ -323,13 +451,13 @@ export default function Dashboard() {
                                 Next payment: ${circle.nextPayment}
                               </p>
                             </div>
-                            <Badge className="bg-gradient-to-r from-black to-blue-900">
+                            <Badge className="bg-gradient-to-r from-black to-blue-900 rounded-full px-3 py-1">
                               {circle.paymentDate}
                             </Badge>
                           </div>
                           <Progress
                             value={(circle.borrowed / circle.totalAmount) * 100}
-                            className="h-2 mt-2"
+                            className="h-2 mt-2 rounded-full"
                           />
                           <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
                             <span>
@@ -356,7 +484,7 @@ export default function Dashboard() {
             {contributions.map((contribution) => (
               <Card
                 key={contribution.id}
-                className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10"
+                className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -375,7 +503,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent>
+                      <TooltipContent className="rounded-2xl">
                         <p>{contribution.members} members in this circle</p>
                       </TooltipContent>
                     </Tooltip>
@@ -388,7 +516,7 @@ export default function Dashboard() {
                         contribution.status === "Active"
                           ? "bg-gradient-to-r from-black to-blue-900"
                           : "bg-gradient-to-r from-black to-green-900"
-                      } transition-colors duration-200`}
+                      } transition-colors duration-200 rounded-full px-3 py-1`}
                     >
                       {contribution.status}
                     </Badge>
@@ -415,7 +543,7 @@ export default function Dashboard() {
                   {contribution.status === "Repaid" && (
                     <Button
                       onClick={() => handleRedeem(contribution.id)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20"
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
                     >
                       Redeem Contribution
                     </Button>
@@ -429,7 +557,7 @@ export default function Dashboard() {
             {activeCircles.map((circle) => (
               <Card
                 key={circle.id}
-                className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10"
+                className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -454,7 +582,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </HoverCardTrigger>
-                      <HoverCardContent className="w-80 bg-black/90 border-blue-900/20">
+                      <HoverCardContent className="w-80 bg-black/90 border-blue-900/20 rounded-2xl">
                         <div className="space-y-2">
                           <h4 className="text-sm font-semibold">
                             Circle Reliability Score
@@ -476,7 +604,7 @@ export default function Dashboard() {
                 <CardContent>
                   <Progress
                     value={(circle.borrowed / circle.totalAmount) * 100}
-                    className="h-2"
+                    className="h-2 rounded-full"
                   />
                   <div className="mt-4 space-y-2">
                     <div className="flex justify-between text-sm">
@@ -489,7 +617,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {circle.borrowed === circle.totalAmount && (
-                    <div className="mt-4 flex items-center p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <div className="mt-4 flex items-center p-2 rounded-2xl bg-yellow-500/10 border border-yellow-500/20">
                       <AlertCircle className="h-4 w-4 text-yellow-500 mr-2" />
                       <span className="text-sm text-yellow-500">
                         Maximum amount borrowed
@@ -500,7 +628,7 @@ export default function Dashboard() {
                 <CardFooter>
                   <Button
                     onClick={() => handlePayback(circle.id)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
                   >
                     Make Payment
                   </Button>

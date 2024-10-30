@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { writeContract, getAccount, simulateContract } from "@wagmi/core";
 import { membershipContractAddress, abi } from "@/abi/MembershipAbi";
@@ -17,7 +17,8 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
-import { Info } from "lucide-react";
+import { Info, Upload } from "lucide-react";
+import Image from "next/image";
 
 const CONTRACT_ADDRESS = membershipContractAddress;
 const CONTRACT_ABI = abi;
@@ -60,7 +61,18 @@ async function generateSignature(userAddress: string, newTokenId: string) {
 export default function GetStarted() {
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatar(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +124,22 @@ export default function GetStarted() {
       const hash = await writeContract(config, request);
       console.log("Transaction hash:", hash);
 
+      // Upload avatar to Supabase Storage if provided
+      let avatarUrl = null;
+      if (avatar) {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(`${account.address}_avatar.png`, avatar);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        avatarUrl = supabase.storage
+          .from("avatars")
+          .getPublicUrl(`${account.address}_avatar.png`).data.publicUrl;
+      }
+
       // Insert user data into Supabase
       const { data, error } = await supabase
         .from("qQuestUserProfile")
@@ -119,6 +147,7 @@ export default function GetStarted() {
           {
             userAddy: account.address,
             userName: name,
+            avatarUrl: avatarUrl,
           },
         ])
         .select();
@@ -131,6 +160,8 @@ export default function GetStarted() {
 
       // Clear the form
       setName("");
+      setAvatar(null);
+      setAvatarPreview(null);
 
       // Redirect to dashboard
       router.push("/dashboard");
@@ -148,17 +179,46 @@ export default function GetStarted() {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-black to-blue-950 text-white">
-      <Card className="w-full max-w-md bg-gray-800/50 border-gray-700 backdrop-blur-sm  rounded-2xl">
+      <Card className="w-full max-w-md bg-gray-800/50 border-gray-700 backdrop-blur-sm rounded-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
             Let's get started
           </CardTitle>
           <CardDescription className="text-gray-300">
-            Please enter your name to personalize your experience.
+            Please enter your name and upload a profile picture to personalize
+            your experience.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex flex-col items-center mb-4">
+              <div
+                className="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center cursor-pointer overflow-hidden"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {avatarPreview ? (
+                  <Image
+                    src={avatarPreview}
+                    alt="Avatar preview"
+                    width={96}
+                    height={96}
+                    className="object-cover"
+                  />
+                ) : (
+                  <Upload className="w-8 h-8 text-gray-400" />
+                )}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                accept="image/*"
+                className="hidden"
+              />
+              <p className="mt-2 text-sm text-gray-400">
+                Click to upload profile picture
+              </p>
+            </div>
             <Input
               type="text"
               value={name}
