@@ -55,6 +55,19 @@ interface CircleData {
   isUSDC: boolean;
 }
 
+/**
+ * 
+ 
+"0x66aAf3098E1eB1F24348e84F509d8bcfD92D0620" 
+104n
+1730313000
+1732213800
+60n
+0
+false
+true
+ */
+
 interface ContributionDetails {
   id: number;
   circleName: string;
@@ -150,16 +163,30 @@ export default function Dashboard() {
       const processedContributions = await Promise.all(
         contributionData.map(async (contribution) => {
           const circleState = await getCircleState(contribution.circleId);
+          console.log("contributionDaaaaata:", contributionData);
+          console.log("circleStateeeeee:", circleState[0]);
+
+          let status;
+          if (circleState[5] === 0) {
+            status = "Active";
+          } else if (circleState[5] === 1) {
+            status = "Killed";
+          } else if (circleState[5] === 2) {
+            status = "Redeemed";
+          } else {
+            status = "Unknown";
+          }
+
           return {
-            id: contribution.contributionId,
-            circleName: contribution.qQuestCircleDeets.title,
-            amount: contribution.contributionAmount,
-            status: ["Active", "Killed", "Redeemed"][circleState.state],
+            id: contribution?.contributionId,
+            circleName: contribution?.qQuestCircleDeets?.title,
+            amount: contribution?.contributionAmount,
+            status: status,
             dueDate: new Date(
-              contribution.qQuestCircleDeets.endDate
+              contribution.qQuestCircleDeets?.endDate
             ).toLocaleDateString(),
             members: 0, // You'll need to implement a way to track this
-            reliability: contribution.qQuestCircleDeets?.userReputationScore,
+            reliability: 0,
             repaidDate:
               circleState.state === 2
                 ? new Date().toLocaleDateString()
@@ -197,14 +224,13 @@ export default function Dashboard() {
             dueDate: new Date(circle.endDate).toLocaleDateString(),
             members: 0, // Implement member counting
             reliability: circle.userReputationScore,
-            nextPayment: Number(circle.amountToRaise) / circle.termPeriod,
+            nextPayment: Number(circle.amountToRaise),
             paymentDate: formatDistanceToNow(new Date(circle.endDate), {
               addSuffix: true,
             }),
           };
         })
       );
-      console.log("processedCircles:", processedCircles);
 
       // Calculate stats
       const totalContributed = processedContributions.reduce(
@@ -239,6 +265,12 @@ export default function Dashboard() {
         },
         // ... more activity items
       ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      console.log("contributionsssss:", contributions);
+      console.log("activeCircles:", activeCircles);
+      console.log("staaats:", stats);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -266,8 +298,8 @@ export default function Dashboard() {
         <header className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-indigo-300 text-transparent bg-clip-text">
-              Welcome back, {account?.address?.slice(0, 6)}...
-              {account?.address?.slice(-4)}
+              Welcome back, {account?.address?.slice(0, 5)}...
+              {account?.address?.slice(-2)}
             </h1>
             <p className="text-gray-300">
               Here's an overview of your qQuest activity
@@ -357,7 +389,9 @@ export default function Dashboard() {
                   <DollarSign className="h-4 w-4 text-blue-400" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$5,000</div>
+                  <div className="text-2xl font-bold">
+                    ${stats?.totalBorrowed}
+                  </div>
                   <div className="flex items-center mt-1">
                     <Clock className="h-4 w-4 text-blue-400 mr-1" />
                     <p className="text-xs text-gray-400">
