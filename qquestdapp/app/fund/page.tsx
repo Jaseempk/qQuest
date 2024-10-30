@@ -5,10 +5,16 @@ import Image from "next/image";
 import { Bell, CheckCircle, Home, Delete } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/supabaseConfig";
-import { readContract, writeContract, simulateContract } from "@wagmi/core";
+import {
+  readContract,
+  writeContract,
+  simulateContract,
+  getAccount,
+} from "@wagmi/core";
 import { abi, circleContractAddress } from "@/abi/CircleAbi";
 import { config } from "@/ConnectKit/Web3Provider";
 import { useRouter } from "next/navigation";
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 
 interface FundingDetailsProps {
   userName: string;
@@ -192,6 +198,57 @@ export default function FundPage() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
   };
+  const client = new ApolloClient({
+    uri: "https://api.studio.thegraph.com/query/58232/qquestsubgraphs/version/latest", // Replace with your subgraph URL
+    cache: new InMemoryCache(),
+  });
+
+  // Query to fetch the latest contribution by a specific contributor
+  const GET_LATEST_CONTRIBUTION = gql`
+    query GetLatestContribution($contributorAddress: Bytes!) {
+      circleContributions(
+        first: 1
+        orderBy: blockTimestamp
+        orderDirection: desc
+        where: { contributor: $contributorAddress }
+      ) {
+        contributionId
+        contributor
+        contributionAmount
+        circleId
+        isUSDC
+        blockTimestamp
+        transactionHash
+      }
+    }
+  `;
+
+  // Function to fetch the latest contribution ID for a contributor
+  const fetchLatestContributionId = async (
+    contributorAddress: string
+  ): Promise<string> => {
+    try {
+      const { data } = await client.query({
+        query: GET_LATEST_CONTRIBUTION,
+        variables: {
+          contributorAddress: contributorAddress.toLowerCase(),
+        },
+        fetchPolicy: "network-only", // This ensures we get fresh data from the subgraph
+      });
+
+      if (!data?.circleContributions?.[0]) {
+        throw new Error("No contributions found");
+      }
+      console.log(
+        "sherikk-contributionId:",
+        data.circleContributions[0].contributionId
+      );
+      return data.circleContributions[0].contributionId;
+    } catch (error) {
+      console.error("Error fetching contribution ID from The Graph:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const fetchFundingDetails = async () => {
@@ -266,6 +323,8 @@ export default function FundPage() {
       </div>
     );
   }
+  const account = getAccount(config);
+
   const handleFundNow = async () => {
     if (!circleId || !fundingDetails) {
       setError("Invalid circle or funding details");
@@ -294,7 +353,31 @@ export default function FundPage() {
       });
 
       const result = await writeContract(config, request);
+
+      // Add a delay of 2 seconds (2000 ms) to allow indexing of the latest contribution
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
       setShowSuccessScreen(true);
+      const contributionId = await fetchLatestContributionId(
+        account?.address || ""
+      );
+
+      console.log("coontributionId:", contributionId);
+
+      const { data, error } = await supabase
+        .from("qQuestContribution")
+        .insert([
+          {
+            contributionId: contributionId,
+            contributorAddress: account.address,
+            contributionAmount: fundAmount,
+            circleId: circleId,
+          },
+        ])
+        .select();
+
+      console.log("contribution-details:", data);
+      console.log("supabaseError:", error);
 
       console.log("Funding successful:", result);
       // Handle successful funding (e.g., show success message, redirect)
