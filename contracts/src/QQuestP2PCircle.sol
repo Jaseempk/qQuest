@@ -121,7 +121,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     enum CircleState {
         Active,
         Killed,
-        Redeemed
+        Redeemed,
+        Paidback
     }
 
     // Struct to store contribution details
@@ -501,6 +502,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         userToRepaymentCount[msg.sender] += 1;
 
         idToUserCircleData[circleId].isRepaymentOnTime = true;
+        idToUserCircleData[circleId].state = CircleState.Paidback;
 
         IERC20 token = circle.isUSDC
             ? IERC20(i_usdcAddress)
