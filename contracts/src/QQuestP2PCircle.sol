@@ -50,6 +50,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__LeadDurationBeyondMaximum();
     error QQuest__LeadTimeCanOnlyBeInFuture();
     error QQuest__ContributionAmountTooHigh();
+    error QQuest__CantContributeToOwnCircle();
     error QQuest__CanOnlyRedeemAfterDuePeriod();
     error QQuest__CantRedeemWhenCircleIsActive();
     error QQuest__UserAlreadyBannedFromPlatform();
@@ -66,6 +67,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint16 public constant PRECISION = 1e3;
     // Precision for collateral calculations
     uint32 public constant COLLATERAL_PRECISION = 1e8;
+
+    uint32 public constant TOKEN_DECIMAL_PRECISION = 1e6;
 
     // Minimum builder score required for certain actions
     uint8 public constant MIN_BUILDER_SCORE = 25;
@@ -122,7 +125,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         Active,
         Killed,
         Redeemed,
-        Paidback
+        Settled
     }
 
     // Struct to store contribution details
@@ -362,6 +365,9 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         if (circle.creator == address(0)) revert QQuest__InvalidCircleId();
         if (circle.state != CircleState.Active) revert QQuest__InactiveCircle();
 
+        if (circle.creator == msg.sender)
+            revert QQuest__CantContributeToOwnCircle();
+
         // Ensure the contribution is within the lead time
         if (block.timestamp > circle.leadTimeDuration) {
             revert QQuest__CircleDurationOver();
@@ -417,11 +423,15 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             ? IERC20(i_usdcAddress)
             : IERC20(i_usdtAddress);
 
+        token.approve(
+            address(this),
+            uint256(uint256(amountToContribute) * TOKEN_DECIMAL_PRECISION)
+        );
         // Transfer the contribution amount from the user to the contract
         token.transferFrom(
             msg.sender,
             address(this),
-            uint256(amountToContribute)
+            uint256(uint256(amountToContribute) * TOKEN_DECIMAL_PRECISION)
         );
     }
 
@@ -502,7 +512,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         userToRepaymentCount[msg.sender] += 1;
 
         idToUserCircleData[circleId].isRepaymentOnTime = true;
-        idToUserCircleData[circleId].state = CircleState.Paidback;
+        idToUserCircleData[circleId].state = CircleState.Settled;
 
         IERC20 token = circle.isUSDC
             ? IERC20(i_usdcAddress)
@@ -521,7 +531,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         token.transferFrom(
             msg.sender,
             address(this),
-            (circle.fundGoalValue + feeAmount)
+            ((circle.fundGoalValue + feeAmount) * TOKEN_DECIMAL_PRECISION)
         );
     }
 
@@ -599,7 +609,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
 
         token.transfer(
             msg.sender,
-            uint256(contributionDeets.contributionAmount)
+            uint256(contributionDeets.contributionAmount) *
+                TOKEN_DECIMAL_PRECISION
         );
     }
 
@@ -709,7 +720,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         totalFeeUsdtCollected = 0;
         startOfPool = block.timestamp;
 
-        IERC20(asset).transferFrom(address(this), destination, usdAmount);
+        IERC20(asset).transferFrom(
+            address(this),
+            destination,
+            usdAmount * TOKEN_DECIMAL_PRECISION
+        );
     }
 
     function updateTokenAddress(
@@ -851,6 +866,6 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
 
         IERC20 token = isUsdc ? IERC20(i_usdcAddress) : IERC20(i_usdtAddress);
 
-        token.transfer(creator, amount);
+        token.transfer(creator, amount * TOKEN_DECIMAL_PRECISION);
     }
 }

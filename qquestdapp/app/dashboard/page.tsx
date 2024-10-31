@@ -13,6 +13,7 @@ import {
   Plus,
   Sparkles,
   Star,
+  Shield,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/supabaseConfig";
@@ -93,7 +94,7 @@ const FundingRequestCard = ({
               className="bg-gradient-to-r from-[#0052ff] to-[#3380ff] rounded-full p-0.5"
             >
               <div className="flex items-center gap-1.5 bg-gray-900 rounded-full px-3 py-1">
-                <Star className="w-3.5 h-3.5 text-[#0052ff]" />
+                <Shield className="w-3.5 h-3.5 text-[#0052ff]" />
                 <span className="text-sm font-semibold text-white">
                   {request.userScore}
                 </span>
@@ -105,7 +106,7 @@ const FundingRequestCard = ({
           href="#"
           className="ml-auto text-sm text-[#0052ff] hover:text-[#3380ff] transition-colors"
         >
-          View profile →
+          View profile
         </Link>
       </div>
 

@@ -42,7 +42,7 @@ export const SuccessModal = ({ isOpen, onClose, isRedemption, circleName }) => {
           >
             {isRedemption ? <AnimatedCheck /> : <AnimatedX />}
           </div>
-          <DialogTitle className="text-2xl font-bold text-center mt-8 bg-gradient-to-r from-white to-gray-300 text-transparent bg-clip-text">
+          <DialogTitle className="text-2xl font-bold text-center mt-8 mb-6 bg-gradient-to-r from-white to-gray-300 text-transparent bg-clip-text">
             {isRedemption ? "Circle Redeemed" : "Circle Killed"}
           </DialogTitle>
         </DialogHeader>
@@ -51,7 +51,7 @@ export const SuccessModal = ({ isOpen, onClose, isRedemption, circleName }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className="flex flex-col items-center p-6 relative"
+          className="flex flex-col items-center px-6 pb-6 relative"
         >
           <div className="flex items-center gap-2 mb-4">
             <Sparkles
@@ -59,7 +59,7 @@ export const SuccessModal = ({ isOpen, onClose, isRedemption, circleName }) => {
                 isRedemption ? "text-green-400" : "text-red-400"
               }`}
             />
-            <span className="text-xl font-semibold text-white">
+            <span className="text-lg font-semibold text-white">
               {circleName}
             </span>
           </div>
@@ -68,9 +68,9 @@ export const SuccessModal = ({ isOpen, onClose, isRedemption, circleName }) => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3, duration: 0.4 }}
-            className="bg-gray-800/50 rounded-xl p-4 mb-6 border border-gray-700/50"
+            className="bg-gray-800/40 rounded-2xl p-6 mb-6 w-full"
           >
-            <p className="text-center text-sm text-gray-400">
+            <p className="text-center text-gray-300 leading-relaxed">
               {isRedemption
                 ? "Congratulations! You've successfully completed and redeemed this circle. Your contribution helps strengthen the qQuest community."
                 : "This circle has been successfully terminated. All associated data has been properly handled."}
