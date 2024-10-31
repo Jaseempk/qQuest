@@ -27,6 +27,15 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
@@ -38,11 +47,18 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { readContract, getAccount } from "@wagmi/core";
+import {
+  readContract,
+  getAccount,
+  writeContract,
+  simulateContract,
+} from "@wagmi/core";
 import { supabase } from "../../supabaseConfig";
 import { abi, circleContractAddress } from "../../abi/CircleAbi";
 import { formatDistanceToNow } from "date-fns";
 import { config } from "@/ConnectKit/Web3Provider";
+import { SuccessModal } from "@/components/SuccessModal";
+import { PaybackSuccessModal } from "@/components/PaybackSuccessModal";
 
 interface CircleData {
   creator: string;
@@ -54,19 +70,6 @@ interface CircleData {
   isRepaymentOnTime: boolean;
   isUSDC: boolean;
 }
-
-/**
- * 
- 
-"0x66aAf3098E1eB1F24348e84F509d8bcfD92D0620" 
-104n
-1730313000
-1732213800
-60n
-0
-false
-true
- */
 
 interface ContributionDetails {
   id: number;
@@ -81,6 +84,7 @@ interface ContributionDetails {
 
 interface CircleDetails {
   id: number;
+  circleId: string;
   name: string;
   borrowed: number;
   totalAmount: number;
@@ -107,12 +111,144 @@ export default function Dashboard() {
   const [contributions, setContributions] = useState<ContributionDetails[]>([]);
   const [activeCircles, setActiveCircles] = useState<CircleDetails[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [selectedCircleId, setSelectedCircleId] = useState<number | null>(null);
+  const [circleStates, setCircleStates] = useState<{
+    [key: number]: CircleData;
+  }>({});
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalInfo, setSuccessModalInfo] = useState({
+    isRedemption: true,
+    circleName: "",
+  });
+  const [showPaybackSuccessModal, setShowPaybackSuccessModal] = useState(false);
+  const [paybackSuccessInfo, setPaybackSuccessInfo] = useState({
+    circleName: "",
+    amount: 0,
+  });
+
   const [stats, setStats] = useState({
     totalContributed: 0,
     activeCirclesCount: 0,
     totalBorrowed: 0,
     nextPaymentDue: "",
   });
+
+  const handleCircleAction = async (
+    circleId: string,
+    isReadyToRedeem: boolean
+  ) => {
+    try {
+      console.log("circleIdddd:", circleId);
+      const { request } = await simulateContract(config, {
+        abi,
+        address: circleContractAddress,
+        functionName: "redeemCircleFund",
+        args: [circleId, isReadyToRedeem],
+      });
+
+      const result = await writeContract(config, request);
+      console.log(
+        `Circle ${circleId} ${isReadyToRedeem ? "redeemed" : "killed"}`
+      );
+
+      // Show success modal
+      const circle = activeCircles.find((c) => c.circleId === circleId);
+      setSuccessModalInfo({
+        isRedemption: isReadyToRedeem,
+        circleName: circle ? circle.name : "Unknown Circle",
+      });
+      setShowSuccessModal(true);
+
+      // Refresh dashboard data after action
+      await fetchDashboardData();
+    } catch (error) {
+      console.error("Error redeeming circle fund:", error);
+      setError("Failed to perform circle action. Please try again.");
+    }
+  };
+  const renderCircleActionButton = (circle: CircleDetails) => {
+    const circleState = circleStates[circle.id];
+    console.log("circleeeStaaate:", circleState);
+    console.log("circleee:", circle);
+    if (!circleState) return null;
+
+    const borrowedPercentage = (circle.borrowed / circle.totalAmount) * 100;
+
+    // Case 1: Circle is Active (state = 0) and 50% < borrowed < 100%
+    if (
+      circleState[5] === 0 &&
+      borrowedPercentage > 50 &&
+      borrowedPercentage < 100
+    ) {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3">
+              Manage Circle
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-gray-800 border-gray-700">
+            <DialogHeader>
+              <DialogTitle>Manage Circle</DialogTitle>
+              <DialogDescription>
+                Choose whether to redeem the partially filled circle or kill it
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex space-x-4">
+              <Button
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                onClick={() => handleCircleAction(circle.circleId, true)}
+              >
+                Redeem Circle
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                onClick={() => handleCircleAction(circle.circleId, false)}
+              >
+                Kill Circle
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+
+    // Case 2: Circle is Active (state = 0) and borrowed = 100%
+    if (circleState[5] === 0 && borrowedPercentage === 100) {
+      return (
+        <Button
+          onClick={() => handleCircleAction(circle.circleId, true)}
+          className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 transition-all duration-300 shadow-lg shadow-green-900/20 rounded-full px-4 py-3"
+        >
+          Redeem Circle
+        </Button>
+      );
+    }
+
+    // Case 3: Circle is Redeemed (state = 2)
+    if (circleState[5] === 2) {
+      return (
+        <Button
+          onClick={() => handlePayback(circle.circleId)}
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
+        >
+          Make Payment
+        </Button>
+      );
+    }
+
+    // Case 4: Circle is Killed (state = 1)
+    if (circleState[5] === 1) {
+      return (
+        <div className="flex items-center justify-center p-2 rounded-2xl bg-red-500/10 border border-red-500/20">
+          <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
+          <span className="text-sm text-red-500">Circle Killed</span>
+        </div>
+      );
+    }
+
+    return null;
+  };
   const router = useRouter();
   const account = getAccount(config);
   console.log("account:", account);
@@ -206,6 +342,15 @@ export default function Dashboard() {
 
       console.log("circleData:", circleData);
 
+      const states = await Promise.all(
+        circleData.map(async (circle) => {
+          const state = await getCircleState(circle.circleId);
+          return { [circle.id]: state };
+        })
+      );
+
+      setCircleStates(Object.assign({}, ...states));
+
       // Process circle data
       const processedCircles = await Promise.all(
         circleData.map(async (circle) => {
@@ -218,6 +363,7 @@ export default function Dashboard() {
 
           return {
             id: circle.id,
+            circleId: circle.circleId,
             name: circle.title,
             borrowed: Number(circle.amountToRaise) - Number(amountLeftToRaise),
             totalAmount: Number(circle.amountToRaise),
@@ -287,9 +433,26 @@ export default function Dashboard() {
     console.log(`Redeeming contribution ${contributionId}`);
   };
 
-  const handlePayback = (circleId: number) => {
-    // Implement payback logic
+  const handlePayback = async (circleId: string) => {
+    const { request } = await simulateContract(config, {
+      abi,
+      address: circleContractAddress,
+      functionName: "paybackCircledFund",
+      args: [circleId],
+    });
+
+    const result = await writeContract(config, request);
     console.log(`Paying back circle ${circleId}`);
+
+    // Show payback success modal
+    const circle = activeCircles.find((c) => c.circleId === circleId);
+    if (circle) {
+      setPaybackSuccessInfo({
+        circleName: circle.name,
+        amount: circle.nextPayment,
+      });
+      setShowPaybackSuccessModal(true);
+    }
   };
 
   return (
@@ -545,7 +708,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center">
-                    <Badge
+                    {/* <Badge
                       className={`${
                         contribution.status === "Active"
                           ? "bg-gradient-to-r from-black to-blue-900"
@@ -553,7 +716,23 @@ export default function Dashboard() {
                       } transition-colors duration-200 rounded-full px-3 py-1`}
                     >
                       {contribution.status}
+                    </Badge> */}
+                    <Badge
+                      className={`${
+                        contribution.status === "Active"
+                          ? "bg-gradient-to-r from-black to-blue-900"
+                          : contribution.status === "Killed"
+                          ? "bg-gradient-to-r from-red-500/20 to-red-400"
+                          : "bg-gradient-to-r from-green-500/20 to-green-400"
+                      } rounded-full px-3 py-1`}
+                    >
+                      {contribution.status === "Active"
+                        ? "Active"
+                        : contribution.status === "Killed"
+                        ? "Killed"
+                        : "Redeemed"}
                     </Badge>
+
                     {contribution.status === "Active" ? (
                       <div className="flex items-center text-gray-400">
                         <Clock className="h-4 w-4 mr-2" />
@@ -659,18 +838,23 @@ export default function Dashboard() {
                     </div>
                   )}
                 </CardContent>
-                <CardFooter>
-                  <Button
-                    onClick={() => handlePayback(circle.id)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
-                  >
-                    Make Payment
-                  </Button>
-                </CardFooter>
+                <CardFooter>{renderCircleActionButton(circle)}</CardFooter>
               </Card>
             ))}
           </TabsContent>
         </Tabs>
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          isRedemption={successModalInfo.isRedemption}
+          circleName={successModalInfo.circleName}
+        />
+        <PaybackSuccessModal
+          isOpen={showPaybackSuccessModal}
+          onClose={() => setShowPaybackSuccessModal(false)}
+          circleName={paybackSuccessInfo.circleName}
+          amount={paybackSuccessInfo.amount}
+        />
       </div>
     </TooltipProvider>
   );
