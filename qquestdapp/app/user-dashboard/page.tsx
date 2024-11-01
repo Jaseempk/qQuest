@@ -300,7 +300,14 @@ export default function Dashboard() {
         contributionData.map(async (contribution) => {
           const circleState = await getCircleState(contribution.circleId);
           console.log("contributionDaaaaata:", contributionData);
-          console.log("circleStateeeeee:", circleState[0]);
+          console.log("circleStateeeeee:", circleState[5]);
+
+          const reputationScore = await readContract(config, {
+            abi,
+            address: circleContractAddress,
+            functionName: "getUserReputations",
+            args: [userAddress],
+          });
 
           let status;
           if (circleState[5] === 0) {
@@ -309,6 +316,8 @@ export default function Dashboard() {
             status = "Killed";
           } else if (circleState[5] === 2) {
             status = "Redeemed";
+          } else if (circleState[5] == 3) {
+            status = "Settled";
           } else {
             status = "Unknown";
           }
@@ -322,9 +331,9 @@ export default function Dashboard() {
               contribution.qQuestCircleDeets?.endDate
             ).toLocaleDateString(),
             members: 0, // You'll need to implement a way to track this
-            reliability: 0,
+            reliability: reputationScore,
             repaidDate:
-              circleState.state === 2
+              circleState[5] === 2
                 ? new Date().toLocaleDateString()
                 : undefined,
           };
@@ -354,6 +363,7 @@ export default function Dashboard() {
       // Process circle data
       const processedCircles = await Promise.all(
         circleData.map(async (circle) => {
+          console.log("Enddateee:", circle.endDate);
           const amountLeftToRaise = await readContract(config, {
             abi,
             address: circleContractAddress,
@@ -708,15 +718,6 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center">
-                    {/* <Badge
-                      className={`${
-                        contribution.status === "Active"
-                          ? "bg-gradient-to-r from-black to-blue-900"
-                          : "bg-gradient-to-r from-black to-green-900"
-                      } transition-colors duration-200 rounded-full px-3 py-1`}
-                    >
-                      {contribution.status}
-                    </Badge> */}
                     <Badge
                       className={`${
                         contribution.status === "Active"
@@ -753,7 +754,7 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  {contribution.status === "Repaid" && (
+                  {contribution.status === "Settled" && (
                     <Button
                       onClick={() => handleRedeem(contribution.id)}
                       className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"

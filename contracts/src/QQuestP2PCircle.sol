@@ -51,6 +51,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     error QQuest__LeadTimeCanOnlyBeInFuture();
     error QQuest__ContributionAmountTooHigh();
     error QQuest__CantContributeToOwnCircle();
+    error QQuest__CantRedeemCircleStillActive();
     error QQuest__CanOnlyRedeemAfterDuePeriod();
     error QQuest__CantRedeemWhenCircleIsActive();
     error QQuest__UserAlreadyBannedFromPlatform();
@@ -69,6 +70,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint32 public constant COLLATERAL_PRECISION = 1e8;
 
     uint32 public constant TOKEN_DECIMAL_PRECISION = 1e6;
+
+    uint256 public constant ETH_PRECISION = 1e18;
 
     // Minimum builder score required for certain actions
     uint8 public constant MIN_BUILDER_SCORE = 25;
@@ -551,7 +554,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             revert QQuest__InsufficientCollateral();
         }
         uint96 cltrAmount = idToUserCircleData[circleId].collateralAmount;
-        uint256 requiredCollateral = (uint256(cltrAmount) * (1e18 / PRECISION));
+        uint256 requiredCollateral = (uint256(cltrAmount) *
+            (ETH_PRECISION / PRECISION));
         idToUserCircleData[circleId].collateralAmount = 0;
 
         emit UserCollateralUnlocked(
@@ -592,8 +596,11 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         if (contributionDeets.contributionAmount == 0) {
             revert QQuest__NoContributionFound();
         }
-        if (circle.state == CircleState.Active) {
-            revert QQuest__CantRedeemWhenCircleIsActive();
+        if (
+            circle.state != CircleState.Settled &&
+            circle.state != CircleState.Killed
+        ) {
+            revert QQuest__CantRedeemCircleStillActive();
         }
 
         IERC20 token = circle.isUSDC
@@ -800,7 +807,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      */
     function validateCollateral(uint96 collateralAmount) internal view {
         uint256 requiredCollateral = (uint256(collateralAmount) *
-            (1e18 / PRECISION));
+            (ETH_PRECISION / PRECISION));
 
         if (msg.value < requiredCollateral) {
             revert QQuest__InsufficientCollateral();

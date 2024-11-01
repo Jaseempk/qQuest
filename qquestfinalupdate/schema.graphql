@@ -1,0 +1,159 @@
+type CircleContribution @entity(immutable: true) {
+  id: Bytes!
+  contributor: Bytes! # address
+  contributionAmount: BigInt! # int256
+  contributionId: Bytes! # bytes32
+  isUSDC: Boolean! # bool
+  circleId: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type CircleCreated @entity(immutable: true) {
+  id: Bytes!
+  creator: Bytes! # address
+  circleId: Bytes! # bytes32
+  isUSDC: Boolean! # bool
+  goalValueToRaise: BigInt! # uint256
+  leadDurations: BigInt! # uint256
+  dueDuration: BigInt! # uint256
+  builderScore: Int! # uint16
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type CircleKilled @entity(immutable: true) {
+  id: Bytes!
+  creator: Bytes! # address
+  circleId: Bytes! # bytes32
+  timestamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type CircleRedeemed @entity(immutable: true) {
+  id: Bytes!
+  creator: Bytes! # address
+  circleId: Bytes! # bytes32
+  amountRaised: BigInt! # uint96
+  timestamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type CircleThresholdUpdated @entity(immutable: true) {
+  id: Bytes!
+  newAllyGoalValueThreshold: BigInt! # uint256
+  newGuardianGoalValueThreshold: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RepaymentFailed @entity(immutable: true) {
+  id: Bytes!
+  creator: Bytes! # address
+  paymentFailureCount: Int! # uint8
+  circleId: Bytes! # bytes32
+  timeStamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RepaymentSuccessful @entity(immutable: true) {
+  id: Bytes!
+  creator: Bytes! # address
+  circleId: Bytes! # bytes32
+  paybackAmount: BigInt! # uint256
+  timestamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RoleAdminChanged @entity(immutable: true) {
+  id: Bytes!
+  role: Bytes! # bytes32
+  previousAdminRole: Bytes! # bytes32
+  newAdminRole: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RoleGranted @entity(immutable: true) {
+  id: Bytes!
+  role: Bytes! # bytes32
+  account: Bytes! # address
+  sender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RoleRevoked @entity(immutable: true) {
+  id: Bytes!
+  role: Bytes! # bytes32
+  account: Bytes! # address
+  sender: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserBanned @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  timestamp: BigInt! # uint256
+  userFailedRepaymentCount: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserCollateralUnlocked @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  circleId: Bytes! # bytes32
+  amount: BigInt! # uint256
+  timestamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserContributionRedeemed @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  contributionId: Bytes! # bytes32
+  amount: BigInt! # uint256
+  timestamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserReputationScoreSlashed @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  updatedReputationScore: Int! # uint16
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type UserReputationScoreUpdated @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  numberOfContributions: Int! # uint16
+  repaymentCount: Int! # uint16
+  reputationScore: Int! # uint16
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

@@ -1,5 +1,5 @@
 export const circleContractAddress =
-  "0x016d00E2F9178B506f8Fa8E27Eb12b1654B9d78D";
+  "0x87B9a8CeFC5ff1411C380266Cb13967C30931c02";
 export const collateralPriceFeedAddress =
   "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1";
 export const abi = [
@@ -31,6 +31,8 @@ export const abi = [
   { inputs: [], name: "QQuest__AlreadyPastDueDate", type: "error" },
   { inputs: [], name: "QQuest__AssetNonExistent", type: "error" },
   { inputs: [], name: "QQuest__CanOnlyRedeemAfterDuePeriod", type: "error" },
+  { inputs: [], name: "QQuest__CantContributeToOwnCircle", type: "error" },
+  { inputs: [], name: "QQuest__CantRedeemCircleStillActive", type: "error" },
   { inputs: [], name: "QQuest__CantRedeemWhenCircleIsActive", type: "error" },
   { inputs: [], name: "QQuest__CircleDurationNotOver", type: "error" },
   { inputs: [], name: "QQuest__CircleDurationOver", type: "error" },
@@ -498,6 +500,13 @@ export const abi = [
   },
   {
     inputs: [],
+    name: "ETH_PRECISION",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "ETH_PRICE_FEED_ADDRESS",
     outputs: [{ internalType: "address", name: "", type: "address" }],
     stateMutability: "view",
@@ -556,6 +565,13 @@ export const abi = [
     inputs: [],
     name: "REPAYMENTS_WEIGHTAGE",
     outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "TOKEN_DECIMAL_PRECISION",
+    outputs: [{ internalType: "uint32", name: "", type: "uint32" }],
     stateMutability: "view",
     type: "function",
   },

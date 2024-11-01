@@ -151,7 +151,7 @@ export default function CreateCircleForm({
 
   // Create an Apollo Client instance for The Graph
   const client = new ApolloClient({
-    uri: "https://api.studio.thegraph.com/query/58232/qquestsubgraphs/version/latest", // Replace with your subgraph URL
+    uri: "https://api.studio.thegraph.com/query/58232/qquestfinal/version/latest", // Replace with your subgraph URL
     cache: new InMemoryCache(),
   });
 
