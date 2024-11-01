@@ -151,7 +151,7 @@ export default function CreateCircleForm({
 
   // Create an Apollo Client instance for The Graph
   const client = new ApolloClient({
-    uri: "https://api.studio.thegraph.com/query/58232/qquestfinal/version/latest", // Replace with your subgraph URL
+    uri: "https://api.studio.thegraph.com/query/58232/qquestfinalupdate/0.11", // Replace with your subgraph URL
     cache: new InMemoryCache(),
   });
 
@@ -244,6 +244,7 @@ export default function CreateCircleForm({
         // Wait for the transaction to be indexed by The Graph
         // The time needed may vary based on network and indexing speed
         await new Promise((resolve) => setTimeout(resolve, 15000));
+        console.log("caaaller:", account.address);
 
         // Fetch the actual circleId from The Graph
         const circleId = await fetchLatestCircleId(account?.address || "");

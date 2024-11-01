@@ -3,6 +3,9 @@
     "QQuestP2PCircle": {
       "address": "0x87B9a8CeFC5ff1411C380266Cb13967C30931c02",
       "startBlock": 17334754
+    },
+    "QQuestP2PCircleMembership": {
+      "address": "0x54CDf5787f7b5B585687Fe83cD1A460fe5b94c7f"
     }
   }
 }
