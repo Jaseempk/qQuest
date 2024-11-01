@@ -16,7 +16,6 @@ import {
   UserReputationScoreUpdated as UserReputationScoreUpdatedEvent,
 } from "../generated/QQuestP2PCircle/QQuestP2PCircle";
 import {
-  Circle,
   CircleContribution,
   CircleCreated,
   CircleKilled,
@@ -30,7 +29,6 @@ import {
   UserBanned,
   UserCollateralUnlocked,
   UserContributionRedeemed,
-  UserReputationScore,
   UserReputationScoreSlashed,
   UserReputationScoreUpdated,
 } from "../generated/schema";
@@ -50,32 +48,6 @@ export function handleCircleContribution(event: CircleContributionEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
-
-  let circle = Circle.load(event.params.circleId);
-
-  if (circle !== null) {
-    let contributors = circle.contributors;
-    if (contributors == null) {
-      contributors = [];
-    }
-
-    let contributionAmounts = circle.contributionAmount;
-    if (contributionAmounts == null) {
-      contributionAmounts = [];
-    }
-
-    contributors.push(event.params.contributor);
-    contributionAmounts.push(event.params.contributionAmount);
-
-    circle.contributors = contributors;
-    circle.contributionAmount = contributionAmounts;
-
-    circle.blockNumber = event.block.number;
-    circle.blockTimestamp = event.block.timestamp;
-    circle.transactionHash = event.transaction.hash;
-
-    circle.save();
-  }
 }
 
 export function handleCircleCreated(event: CircleCreatedEvent): void {
@@ -95,24 +67,6 @@ export function handleCircleCreated(event: CircleCreatedEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
-
-  let circle = new Circle(event.params.circleId);
-  circle.creator = event.params.creator;
-  circle.circleId = event.params.circleId;
-  circle.isUSDC = event.params.isUSDC;
-  circle.goalValueToRaise = event.params.goalValueToRaise;
-  circle.leadDurations = event.params.leadDurations;
-  circle.dueDuration = event.params.dueDuration;
-  circle.builderScore = event.params.builderScore;
-  circle.contributors = [];
-  circle.contributionAmount = [];
-  circle.state = 0;
-
-  circle.blockNumber = event.block.number;
-  circle.blockTimestamp = event.block.timestamp;
-  circle.transactionHash = event.transaction.hash;
-
-  circle.save();
 }
 
 export function handleCircleKilled(event: CircleKilledEvent): void {
@@ -128,17 +82,6 @@ export function handleCircleKilled(event: CircleKilledEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
-
-  let circle = Circle.load(event.params.circleId);
-  if (circle) {
-    circle.state = 1;
-
-    circle.killedBlockNumber = event.block.number;
-    circle.killedBlockTimestamp = event.block.timestamp;
-    circle.killedTransactionHash = event.transaction.hash;
-
-    circle.save();
-  }
 }
 
 export function handleCircleRedeemed(event: CircleRedeemedEvent): void {
@@ -155,17 +98,6 @@ export function handleCircleRedeemed(event: CircleRedeemedEvent): void {
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
-
-  let circle = Circle.load(event.params.circleId);
-  if (circle) {
-    circle.state = 2;
-
-    circle.redeemedBlockNumber = event.block.number;
-    circle.redeemedBlockTimestamp = event.block.timestamp;
-    circle.redeemedTransactionHash = event.transaction.hash;
-
-    circle.save();
-  }
 }
 
 export function handleCircleThresholdUpdated(
@@ -329,20 +261,6 @@ export function handleUserReputationScoreSlashed(
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
-
-  let userReputationScore = UserReputationScore.load(event.params.user);
-
-  if (userReputationScore == null) {
-    userReputationScore = new UserReputationScore(event.params.user);
-    userReputationScore.user = event.params.user;
-    userReputationScore.reputationScore = 0;
-    userReputationScore.numberOfContributions = 0;
-    userReputationScore.repaymentCount = 0;
-  }
-
-  userReputationScore.reputationScore = event.params.updatedReputationScore;
-
-  userReputationScore.save();
 }
 
 export function handleUserReputationScoreUpdated(
@@ -361,21 +279,4 @@ export function handleUserReputationScoreUpdated(
   entity.transactionHash = event.transaction.hash;
 
   entity.save();
-
-  let userReputationScore = UserReputationScore.load(event.params.user);
-
-  if (userReputationScore == null) {
-    userReputationScore = new UserReputationScore(event.params.user);
-    userReputationScore.user = event.params.user;
-    userReputationScore.reputationScore = 0;
-    userReputationScore.numberOfContributions = 0;
-    userReputationScore.repaymentCount = 0;
-  }
-
-  userReputationScore.reputationScore = event.params.reputationScore;
-  userReputationScore.numberOfContributions =
-    event.params.numberOfContributions;
-  userReputationScore.repaymentCount = event.params.repaymentCount;
-
-  userReputationScore.save();
 }
