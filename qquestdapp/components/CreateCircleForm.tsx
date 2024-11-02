@@ -11,7 +11,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, AlertTriangle } from "lucide-react";
+import {
+  CalendarIcon,
+  AlertTriangle,
+  Clock,
+  DollarSign,
+  Wallet,
+} from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ethers } from "ethers";
@@ -29,6 +35,7 @@ import {
 } from "@/abi/CircleAbi";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 import { parseEther } from "viem";
+import { motion } from "framer-motion";
 
 import { supabase } from "../supabaseConfig";
 
@@ -48,6 +55,8 @@ export default function CreateCircleForm({
   const [description, setDescription] = useState("");
   const [leadTime, setLeadTime] = useState<Date>();
   const [repaymentDate, setRepaymentDate] = useState<Date>();
+  const [leadTimeOpen, setLeadTimeOpen] = useState(false);
+  const [repaymentDateOpen, setRepaymentDateOpen] = useState(false);
   const [leadTimeEpoch, setLeadTimeEpoch] = useState<number>();
   const [repaymentDateEpoch, setRepaymentDateEpoch] = useState<number>();
   const [amount, setAmount] = useState(1000);
@@ -126,6 +135,7 @@ export default function CreateCircleForm({
 
   const handleLeadTimeChange = (date: Date | undefined) => {
     setLeadTime(date);
+    setLeadTimeOpen(false);
     if (date) {
       setLeadTimeEpoch(Math.floor(date.getTime() / 1000));
     } else {
@@ -135,6 +145,7 @@ export default function CreateCircleForm({
 
   const handleRepaymentDateChange = (date: Date | undefined) => {
     setRepaymentDate(date);
+    setRepaymentDateOpen(false);
     if (date) {
       setRepaymentDateEpoch(Math.floor(date.getTime() / 1000));
     } else {
@@ -151,7 +162,7 @@ export default function CreateCircleForm({
 
   // Create an Apollo Client instance for The Graph
   const client = new ApolloClient({
-    uri: "https://api.studio.thegraph.com/query/58232/qquestfinalupdate/0.11", // Replace with your subgraph URL
+    uri: "https://api.studio.thegraph.com/query/58232/qquestfinalupdate/version/latest", // Replace with your subgraph URL
     cache: new InMemoryCache(),
   });
 
@@ -294,56 +305,89 @@ export default function CreateCircleForm({
       throw error;
     }
   };
+
   return (
-    <div className="max-w-2xl mx-auto p-8 rounded-3xl">
-      <h1 className="text-2xl font-bold mb-2">Create new circle</h1>
-      <p className="text-gray-400 mb-8">Submit your leave details below</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-2xl mx-auto p-8 rounded-3xl bg-gradient-to-b from-gray-800/30 to-transparent backdrop-blur-sm border border-gray-700/30"
+    >
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+          Create new circle
+        </h1>
+        <p className="text-gray-400 mt-2">Submit your leave details below</p>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-6">
-          <div>
-            <Label htmlFor="title">Title</Label>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Label
+              htmlFor="title"
+              className="text-sm font-medium text-gray-300"
+            >
+              Title
+            </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Buy sneakers"
-              className="mt-2 bg-gray-800/50 border-gray-700 focus:border-blue-500 rounded-xl"
+              className="mt-2 bg-gray-800/50 border-gray-700 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200"
             />
-          </div>
+          </motion.div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Label
+              htmlFor="description"
+              className="text-sm font-medium text-gray-300"
+            >
+              Description
+            </Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add description"
-              className="mt-2 h-24 bg-gray-800/50 border-gray-700 focus:border-blue-500 rounded-xl"
+              className="mt-2 h-24 bg-gray-800/50 border-gray-700 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl resize-none transition-all duration-200"
             />
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label>Lead time</Label>
-              <Popover>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Label className="text-sm font-medium text-gray-300">
+                Lead time
+              </Label>
+              <Popover open={leadTimeOpen} onOpenChange={setLeadTimeOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full mt-2 justify-start text-left font-normal bg-gray-800/50 border-gray-700 hover:bg-gray-700 rounded-xl"
+                    className="w-full mt-2 justify-start text-left font-normal bg-gray-800/50 border-gray-700 hover:bg-gray-700/70 rounded-xl group transition-all duration-200"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Clock className="mr-2 h-4 w-4 text-gray-400 group-hover:text-gray-300" />
                     {leadTime ? (
                       <div className="flex flex-col items-start">
                         <span>{format(leadTime, "PPP")}</span>
-                        <span className="text-xs text-gray-400"></span>
                       </div>
                     ) : (
                       "Select lead time"
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 rounded-xl">
+                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 rounded-xl shadow-xl">
                   <Calendar
                     mode="single"
                     selected={leadTime}
@@ -353,28 +397,36 @@ export default function CreateCircleForm({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
+            </motion.div>
 
-            <div>
-              <Label>Repayment Date</Label>
-              <Popover>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Label className="text-sm font-medium text-gray-300">
+                Repayment Date
+              </Label>
+              <Popover
+                open={repaymentDateOpen}
+                onOpenChange={setRepaymentDateOpen}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full mt-2 justify-start text-left font-normal bg-gray-800/50 border-gray-700 hover:bg-gray-700 rounded-xl"
+                    className="w-full mt-2 justify-start text-left font-normal bg-gray-800/50 border-gray-700 hover:bg-gray-700/70 rounded-xl group transition-all duration-200"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4 text-gray-400 group-hover:text-gray-300" />
                     {repaymentDate ? (
                       <div className="flex flex-col items-start">
                         <span>{format(repaymentDate, "PPP")}</span>
-                        <span className="text-xs text-gray-400"></span>
                       </div>
                     ) : (
                       "Select repayment date"
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 rounded-xl">
+                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 rounded-xl shadow-xl">
                   <Calendar
                     mode="single"
                     selected={repaymentDate}
@@ -384,22 +436,29 @@ export default function CreateCircleForm({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
+            </motion.div>
           </div>
 
           {leadTime && repaymentDate && (
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Repayment Duration:</Label>
-              <span className="text-sm font-medium">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20"
+            >
+              <Clock className="h-4 w-4 text-blue-400" />
+              <Label className="text-sm text-blue-400">
+                Repayment Duration:
+              </Label>
+              <span className="text-sm font-medium text-blue-300">
                 {repaymentDuration} days
               </span>
-            </div>
+            </motion.div>
           )}
 
           {showWarning && (
             <Alert
               variant="destructive"
-              className="bg-red-900/20 border-red-900"
+              className="bg-red-900/20 border-red-900/50 rounded-xl"
             >
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
@@ -409,8 +468,13 @@ export default function CreateCircleForm({
             </Alert>
           )}
 
-          <div className="space-y-3">
-            <Label>Amount</Label>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-3"
+          >
+            <Label className="text-sm font-medium text-gray-300">Amount</Label>
             <div className="space-y-3">
               <input
                 type="range"
@@ -422,15 +486,27 @@ export default function CreateCircleForm({
               />
               <div className="flex justify-between text-sm text-gray-400">
                 <span>$0</span>
-                <span className="text-white font-medium">${amount}</span>
+                <span className="text-white font-medium bg-blue-500/20 px-3 py-1 rounded-lg border border-blue-500/20">
+                  ${amount}
+                </span>
                 <span>$2000</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex justify-between items-center p-6 bg-gray-800/50 rounded-2xl">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+            className="flex justify-between items-center p-6 bg-gray-800/50 rounded-2xl border border-gray-700/30 backdrop-blur-sm"
+          >
             <div>
-              <Label>Collateral Required</Label>
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-blue-400" />
+                <Label className="text-sm font-medium text-gray-300">
+                  Collateral Required
+                </Label>
+              </div>
               <p className="text-white mt-1">{formatCollateralText()}</p>
               <p className="text-xs text-gray-400 mt-1">
                 {repaymentDuration <= 30
@@ -438,19 +514,28 @@ export default function CreateCircleForm({
                   : "200% of requested amount (>30 days)"}
               </p>
             </div>
-            <div className="bg-gray-700 px-6 py-3 rounded-xl">
-              ${collateralAmount.toFixed(2)}
+            <div className="bg-blue-500/10 px-6 py-3 rounded-xl border border-blue-500/20">
+              <DollarSign className="h-4 w-4 text-blue-400 inline-block mr-1" />
+              <span className="font-medium text-blue-300">
+                {collateralAmount.toFixed(2)}
+              </span>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 rounded-2xl"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
         >
-          Create Circle
-        </Button>
+          <Button
+            type="submit"
+            className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-500/25"
+          >
+            Create Circle
+          </Button>
+        </motion.div>
       </form>
-    </div>
+    </motion.div>
   );
 }

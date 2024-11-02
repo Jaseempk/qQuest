@@ -41,6 +41,16 @@
   },
   {
     "inputs": [],
+    "name": "QQuest__CantContributeToOwnCircle",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "QQuest__CantRedeemCircleStillActive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "QQuest__CantRedeemWhenCircleIsActive",
     "type": "error"
   },
@@ -551,6 +561,13 @@
   },
   {
     "inputs": [],
+    "name": "ETH_PRECISION",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "ETH_PRICE_FEED_ADDRESS",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -609,6 +626,13 @@
     "inputs": [],
     "name": "REPAYMENTS_WEIGHTAGE",
     "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TOKEN_DECIMAL_PRECISION",
+    "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
     "stateMutability": "view",
     "type": "function"
   },

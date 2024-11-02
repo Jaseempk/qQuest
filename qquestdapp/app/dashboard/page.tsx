@@ -43,6 +43,7 @@ const FundingRequestCard = ({
   onFundClick: (request: FundingRequest) => void;
 }) => {
   const progress = (request.amountRaised / request.targetAmount) * 100;
+  console.log("requestCard:", request);
 
   return (
     <motion.div
@@ -239,6 +240,7 @@ export default function Dashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log("daataaa:", data);
 
       const currentDate = new Date();
 
@@ -249,6 +251,7 @@ export default function Dashboard() {
             return leadTime > currentDate;
           })
           .map(async (item) => {
+            console.log("daata vernindo:", data);
             const amountLeftToRaise = await fetchAmountLeftToRaise(
               item.circleId
             );
@@ -274,6 +277,7 @@ export default function Dashboard() {
           })
       );
 
+      console.log("requestsWithAddData:", requestsWithAdditionalData);
       setFundingRequests(requestsWithAdditionalData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -284,6 +288,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchFundingRequests();
+
+    console.log("funding requests......:", fundingRequests);
   }, []);
 
   if (loading) {

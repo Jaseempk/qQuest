@@ -32,6 +32,88 @@ import {
   UserReputationScoreSlashed,
   UserReputationScoreUpdated,
 } from "../generated/schema";
+/**
+ * 
+
+export function handleCircleCreated(event: CircleCreatedEvent): void {
+  let entity = new CircleCreated(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+    );
+    entity.creator = event.params.creator;
+    entity.circleId = event.params.circleId;
+    entity.isUSDC = event.params.isUSDC;
+    entity.goalValueToRaise = event.params.goalValueToRaise;
+    entity.leadDurations = event.params.leadDurations;
+    entity.dueDuration = event.params.dueDuration;
+    entity.builderScore = event.params.builderScore;
+    
+    entity.blockNumber = event.block.number;
+    entity.blockTimestamp = event.block.timestamp;
+    entity.transactionHash = event.transaction.hash;
+    
+    entity.save();
+    
+    let circle = new Circle(event.params.circleId);
+    circle.creator = event.params.creator;
+    circle.circleId = event.params.circleId;
+    circle.isUSDC = event.params.isUSDC;
+    circle.goalValueToRaise = event.params.goalValueToRaise;
+    circle.leadDurations = event.params.leadDurations;
+    circle.dueDuration = event.params.dueDuration;
+    circle.builderScore = event.params.builderScore;
+    circle.contributors = [];
+    circle.contributionAmount = [];
+    circle.state = 0;
+    
+    circle.blockNumber = event.block.number;
+    circle.blockTimestamp = event.block.timestamp;
+    circle.transactionHash = event.transaction.hash;
+    
+    circle.save();
+    }
+    export function handleCircleContribution(event: CircleContributionEvent): void {
+      let entity = new CircleContribution(
+        event.transaction.hash.concatI32(event.logIndex.toI32())
+      );
+      entity.contributor = event.params.contributor;
+      entity.contributionAmount = event.params.contributionAmount;
+      entity.contributionId = event.params.contributionId;
+      entity.isUSDC = event.params.isUSDC;
+      entity.circleId = event.params.circleId;
+    
+      entity.blockNumber = event.block.number;
+      entity.blockTimestamp = event.block.timestamp;
+      entity.transactionHash = event.transaction.hash;
+    
+      entity.save();
+    
+      let circle = Circle.load(event.params.circleId);
+    
+      if (circle !== null) {
+        let contributors = circle.contributors;
+        if (contributors == null) {
+          contributors = [];
+        }
+    
+        let contributionAmounts = circle.contributionAmount;
+        if (contributionAmounts == null) {
+          contributionAmounts = [];
+        }
+    
+        contributors.push(event.params.contributor);
+        contributionAmounts.push(event.params.contributionAmount);
+    
+        circle.contributors = contributors;
+        circle.contributionAmount = contributionAmounts;
+    
+        circle.blockNumber = event.block.number;
+        circle.blockTimestamp = event.block.timestamp;
+        circle.transactionHash = event.transaction.hash;
+    
+        circle.save();
+      }
+    }
+ */
 
 export function handleCircleContribution(event: CircleContributionEvent): void {
   let entity = new CircleContribution(

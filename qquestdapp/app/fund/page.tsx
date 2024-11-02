@@ -199,7 +199,7 @@ export default function FundPage() {
     return diffDays > 0 ? diffDays : 0;
   };
   const client = new ApolloClient({
-    uri: "https://api.studio.thegraph.com/query/58232/qquestfinalupdate/0.11", // Replace with your subgraph URL
+    uri: "https://api.studio.thegraph.com/query/58232/qquestfinalupdate/version/latest", // Replace with your subgraph URL
     cache: new InMemoryCache(),
   });
 

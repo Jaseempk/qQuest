@@ -10,7 +10,7 @@ dataSources:
     source:
       address: "0x87B9a8CeFC5ff1411C380266Cb13967C30931c02"
       abi: QQuestP2PCircle
-      startBlock: 16726297
+      startBlock: 17334754
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
