@@ -39,12 +39,12 @@ type Circle @entity(immutable: false) {
   contributors: [Bytes!] # address
   contributionAmount: [BigInt!]
   state: Int!
-  redeemedBlockNumber: BigInt!
-  redeemedBlockTimestamp: BigInt!
-  redeemedTransactionHash: Bytes!
-  killedBlockNumber: BigInt!
-  killedBlockTimestamp: BigInt!
-  killedTransactionHash: Bytes!
+  redeemedBlockNumber: BigInt
+  redeemedBlockTimestamp: BigInt
+  redeemedTransactionHash: Bytes
+  killedBlockNumber: BigInt
+  killedBlockTimestamp: BigInt
+  killedTransactionHash: Bytes
 }
 
 type UserReputationScore @entity(immutable: false) {
