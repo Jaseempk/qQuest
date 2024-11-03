@@ -17,6 +17,7 @@ import {
   Clock,
   DollarSign,
   Wallet,
+  Loader2,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -66,6 +67,7 @@ export default function CreateCircleForm({
   const [circleId, setCircleId] = useState<string>("");
   const [builderScore, setBuilderScore] = useState<number | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Calculate repayment duration and collateral whenever dates change
   useEffect(() => {
@@ -250,6 +252,7 @@ export default function CreateCircleForm({
 
       // Write to contract and wait for transaction
       const hash = await writeContract(config, request);
+      setIsProcessing(true);
 
       if (hash) {
         // Wait for the transaction to be indexed by The Graph
@@ -303,6 +306,8 @@ export default function CreateCircleForm({
     } catch (error) {
       console.error("Error creating circle:", error);
       throw error;
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -530,9 +535,17 @@ export default function CreateCircleForm({
         >
           <Button
             type="submit"
-            className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-500/25"
+            disabled={isProcessing}
+            className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-500/25 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Create Circle
+            {isProcessing ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Transaction Processing...</span>
+              </div>
+            ) : (
+              "Create Circle"
+            )}
           </Button>
         </motion.div>
       </form>

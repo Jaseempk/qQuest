@@ -240,7 +240,9 @@ export default function Dashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log("daataaa:", data);
+      if (data) {
+        console.log("dataa:", data);
+      }
 
       const currentDate = new Date();
 
@@ -251,12 +253,11 @@ export default function Dashboard() {
             return leadTime > currentDate;
           })
           .map(async (item) => {
-            console.log("daata vernindo:", data);
             const amountLeftToRaise = await fetchAmountLeftToRaise(
               item.circleId
             );
             const userReputation = await fetchUserReputation(item.user);
-            console.log("reputation-score:", userReputation);
+            console.log("heey");
             const amountRaised =
               Number(item.amountToRaise) - Number(amountLeftToRaise);
             const backersCount = await fetchBackersCount(item.circleId);
@@ -277,7 +278,6 @@ export default function Dashboard() {
           })
       );
 
-      console.log("requestsWithAddData:", requestsWithAdditionalData);
       setFundingRequests(requestsWithAdditionalData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -288,8 +288,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchFundingRequests();
-
-    console.log("funding requests......:", fundingRequests);
   }, []);
 
   if (loading) {
