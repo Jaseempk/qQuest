@@ -15,6 +15,7 @@ import { abi, circleContractAddress } from "@/abi/CircleAbi";
 import { config } from "@/ConnectKit/Web3Provider";
 import { useRouter } from "next/navigation";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
+import { motion } from "framer-motion";
 
 interface FundingDetailsProps {
   userName: string;
@@ -153,24 +154,63 @@ const SuccessScreen: React.FC<{
   onBackToDashboard: () => void;
 }> = ({ amount, onBackToDashboard }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-3xl p-8 max-w-md w-full mx-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700/50 shadow-xl"
+      >
         <div className="text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Contribution Successful!</h2>
-          <p className="text-gray-400 mb-4">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 200,
+              damping: 15,
+            }}
+          >
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
+          >
+            Contribution Successful!
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-gray-400 mb-6"
+          >
             You have successfully contributed {amount} USDC to this circle.
-          </p>
-          <button
+          </motion.p>
+
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onBackToDashboard}
-            className="bg-blue-600 text-white py-3 px-6 rounded-full font-semibold hover:bg-blue-500 transition-all duration-300 flex items-center justify-center mx-auto"
+            className="bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 px-6 rounded-full font-semibold hover:from-blue-500 hover:to-blue-400 transition-all duration-300 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20"
           >
             <Home className="w-5 h-5 mr-2" />
             Back to Dashboard
-          </button>
+          </motion.button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
