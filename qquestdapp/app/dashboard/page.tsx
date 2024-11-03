@@ -361,7 +361,7 @@ export default function Dashboard() {
               <span className="text-xs font-medium">Dashboard</span>
             </Link>
             <Link
-              href="/rewards"
+              href="/user-rewards"
               className="flex flex-col items-center space-y-1 text-gray-400 hover:text-gray-300 transition-colors"
             >
               <Gift className="w-6 h-6" />
