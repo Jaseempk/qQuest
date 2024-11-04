@@ -287,10 +287,7 @@ function FundPage() {
       if (!data?.circleContributions?.[0]) {
         throw new Error("No contributions found");
       }
-      console.log(
-        "sherikk-contributionId:",
-        data.circleContributions[0].contributionId
-      );
+
       return data.circleContributions[0].contributionId;
     } catch (error) {
       console.error("Error fetching contribution ID from The Graph:", error);
@@ -432,10 +429,8 @@ function FundPage() {
         ])
         .select();
 
-      console.log("contribution-details:", data);
       console.log("supabaseError:", error);
 
-      console.log("Funding successful:", result);
       // Handle successful funding (e.g., show success message, redirect)
     } catch (err) {
       console.error("Funding failed:", err);

@@ -87,7 +87,6 @@ export default function GetStarted() {
 
       // Get the user's Ethereum address
       const account = getAccount(config);
-      console.log("Account status:", account.status);
 
       if (!account.address) {
         throw new Error("No wallet connected");
@@ -110,8 +109,6 @@ export default function GetStarted() {
         ALLY_TOKEN_ID
       );
 
-      console.log("Signature generated:", signatureResponse);
-
       // Simulate contract interaction
       const { request } = await simulateContract(config, {
         abi,
@@ -122,7 +119,6 @@ export default function GetStarted() {
 
       // Execute contract interaction
       const hash = await writeContract(config, request);
-      console.log("Transaction hash:", hash);
 
       // Upload avatar to Supabase Storage if provided
       let avatarUrl = null;
@@ -155,8 +151,6 @@ export default function GetStarted() {
       if (error) {
         throw error;
       }
-
-      console.log("User profile created:", data);
 
       // Clear the form
       setName("");

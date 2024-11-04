@@ -77,7 +77,6 @@ export default function CreateCircleForm({
   // Calculate repayment duration and collateral whenever dates change
   useEffect(() => {
     if (leadTime && repaymentDate) {
-      console.log("env:", process.env.SUPABASE_KEY);
       const duration = differenceInDays(repaymentDate, leadTime);
       setRepaymentDuration(duration);
 
@@ -143,14 +142,10 @@ export default function CreateCircleForm({
           return;
         }
 
-        console.log("data:", qQuestUserProfile);
-
         const userProfile = qQuestUserProfile[0];
         if (userProfile) {
-          console.log("userName:", userProfile.userName);
           setUserName(userProfile.userName);
         } else {
-          console.log("No user profile found for this address");
           setUserName(""); // or whatever default value you want to use
         }
       } catch (error) {
@@ -284,11 +279,9 @@ export default function CreateCircleForm({
         // Wait for the transaction to be indexed by The Graph
         // The time needed may vary based on network and indexing speed
         await new Promise((resolve) => setTimeout(resolve, 15000));
-        console.log("caaaller:", account.address);
 
         // Fetch the actual circleId from The Graph
         const circleId = await fetchLatestCircleId(account?.address || "");
-        console.log("circleId:", circleId);
 
         // Update Supabase with the actual circleId
         const { data, error } = await supabase

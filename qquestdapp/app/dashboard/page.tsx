@@ -57,7 +57,6 @@ const FundingRequestCard = ({
   onFundClick: (request: FundingRequest) => void;
 }) => {
   const progress = (request.amountRaised / request.targetAmount) * 100;
-  console.log("requestCard:", request);
 
   return (
     <motion.div

@@ -150,7 +150,6 @@ export default function Dashboard() {
     isReadyToRedeem: boolean
   ) => {
     try {
-      console.log("circleIdddd:", circleId);
       const { request } = await simulateContract(config, {
         abi,
         address: circleContractAddress,
@@ -159,9 +158,6 @@ export default function Dashboard() {
       });
 
       const result = await writeContract(config, request);
-      console.log(
-        `Circle ${circleId} ${isReadyToRedeem ? "redeemed" : "killed"}`
-      );
 
       // Show success modal
       const circle = activeCircles.find((c) => c.circleId === circleId);
@@ -180,8 +176,7 @@ export default function Dashboard() {
   };
   const renderCircleActionButton = (circle: CircleDetails) => {
     const circleState = circleStates[circle.id];
-    console.log("circleeeStaaate:", circleState);
-    console.log("circleee:", circle);
+
     if (!circleState) return null;
 
     const borrowedPercentage = (circle.borrowed / circle.totalAmount) * 100;
@@ -263,7 +258,7 @@ export default function Dashboard() {
   };
   const router = useRouter();
   const account = getAccount(config);
-  console.log("account:", account);
+
   const getCircleState = async (
     circleId: string
   ): Promise<CircleStateArray> => {
@@ -274,8 +269,7 @@ export default function Dashboard() {
         functionName: "idToUserCircleData",
         args: [circleId],
       });
-      console.log("circleId:", circleId);
-      console.log("daata:", data);
+
       return data as CircleStateArray;
     } catch (error) {
       console.error("Error fetching circle state:", error);
@@ -307,16 +301,12 @@ export default function Dashboard() {
           )
           .eq("contributorAddress", userAddress);
 
-      console.log("contributionDaaataaaa:", contributionData);
-
       if (contributionError) throw contributionError;
 
       // Process contributions and fetch circle states
       const processedContributions = await Promise.all(
         contributionData.map(async (contribution) => {
           const circleState = await getCircleState(contribution.circleId);
-          console.log("contributionDaaaaata:", contributionData);
-          console.log("circleStateeeeee:", circleState[5]);
 
           const reputationScore = await readContract(config, {
             abi,
@@ -359,7 +349,6 @@ export default function Dashboard() {
           };
         })
       );
-      console.log("processedContributions:", processedContributions);
 
       // Fetch circle details where user is creator
       const { data: circleData, error: circleError } = await supabase
@@ -368,8 +357,6 @@ export default function Dashboard() {
         .eq("user", userAddress);
 
       if (circleError) throw circleError;
-
-      console.log("circleData:", circleData);
 
       const states = await Promise.all(
         circleData.map(async (circle) => {
@@ -383,7 +370,6 @@ export default function Dashboard() {
       // Process circle data
       const processedCircles = await Promise.all(
         circleData.map(async (circle) => {
-          console.log("Enddateee:", circle.endDate);
           const amountLeftToRaise = await readContract(config, {
             abi,
             address: circleContractAddress,
@@ -443,10 +429,6 @@ export default function Dashboard() {
       ]);
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      console.log("contributionsssss:", contributions);
-      console.log("activeCircles:", activeCircles);
-      console.log("staaats:", stats);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -472,7 +454,6 @@ export default function Dashboard() {
     });
 
     const result = await writeContract(config, request);
-    console.log(`Paying back circle ${circleId}`);
 
     // Show payback success modal
     const circle = activeCircles.find((c) => c.circleId === circleId);
