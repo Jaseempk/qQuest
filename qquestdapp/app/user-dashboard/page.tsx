@@ -243,6 +243,17 @@ export default function Dashboard() {
         </Button>
       );
     }
+    // Case 3: Circle is Redeemed (state = 2)
+    if (circleState[5] === 3) {
+      return (
+        <Button
+          onClick={() => handleCollateralWIthdrawal(circle.circleId)}
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
+        >
+          Withdraw Collateral
+        </Button>
+      );
+    }
 
     // Case 4: Circle is Killed (state = 1)
     if (circleState[5] === 1) {
@@ -443,6 +454,17 @@ export default function Dashboard() {
   const handleRedeem = (contributionId: number) => {
     // Implement redeem logic
     console.log(`Redeeming contribution ${contributionId}`);
+  };
+
+  const handleCollateralWIthdrawal = async (circleId: string) => {
+    const { request } = await simulateContract(config, {
+      abi,
+      address: circleContractAddress,
+      functionName: "unlockCollateral",
+      args: [circleId],
+    });
+
+    const result = await writeContract(config, request);
   };
 
   const handlePayback = async (circleId: string) => {
