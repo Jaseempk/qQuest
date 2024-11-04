@@ -104,6 +104,17 @@ interface Activity {
   circle: string;
 }
 
+type CircleStateArray = [
+  string, // address
+  bigint, // fundGoalValue
+  number, // leadTimeDuration
+  number, // paymentDueBy
+  bigint, // collateralAmount
+  number, // state (0: Active, 1: Killed, 2: Redeemed)
+  boolean, // isRepaymentOnTime
+  boolean // isUSDC
+];
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
@@ -113,8 +124,9 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [selectedCircleId, setSelectedCircleId] = useState<number | null>(null);
   const [circleStates, setCircleStates] = useState<{
-    [key: number]: CircleData;
+    [key: string]: CircleStateArray;
   }>({});
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successModalInfo, setSuccessModalInfo] = useState({
     isRedemption: true,
@@ -252,7 +264,9 @@ export default function Dashboard() {
   const router = useRouter();
   const account = getAccount(config);
   console.log("account:", account);
-  const getCircleState = async (circleId: string): Promise<CircleData> => {
+  const getCircleState = async (
+    circleId: string
+  ): Promise<CircleStateArray> => {
     try {
       const data = await readContract(config, {
         abi,
@@ -262,7 +276,7 @@ export default function Dashboard() {
       });
       console.log("circleId:", circleId);
       console.log("daata:", data);
-      return data as CircleData;
+      return data as CircleStateArray;
     } catch (error) {
       console.error("Error fetching circle state:", error);
       throw error;
