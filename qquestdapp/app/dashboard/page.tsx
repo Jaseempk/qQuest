@@ -258,39 +258,47 @@ export default function Dashboard() {
 
       const currentDate = new Date();
 
-      const requestsWithAdditionalData: FundingRequest[] = await Promise.all(
+      const requestsWithAdditionalData = await Promise.all(
         data
-          .filter((item: QQuestCircleDeets) => {
+          .filter((item) => {
             const leadTime = new Date(item.leadTime);
             return leadTime > currentDate;
           })
-          .map(async (item: QQuestCircleDeets) => {
-            const amountLeftToRaise = await fetchAmountLeftToRaise(
-              item.circleId
-            );
-            const userReputation = await fetchUserReputation(item.user);
-            console.log("heey");
-            const amountRaised =
-              Number(item.amountToRaise) - Number(amountLeftToRaise);
-            const backersCount = await fetchBackersCount(item.circleId);
+          .map(async (item) => {
+            const amountLeftToRaise =
+              Number(await fetchAmountLeftToRaise(item.circleId)) || 0;
 
-            // Ensure userReputation is a number
-            const userScoreNumber =
-              typeof userReputation === "number" ? userReputation : 0; // or some default value
+            // Handle the unknown type from fetchUserReputation
+            let userReputation: number;
+            try {
+              const fetchedReputation = await fetchUserReputation(item.user);
+              userReputation =
+                typeof fetchedReputation === "number"
+                  ? fetchedReputation
+                  : parseFloat(fetchedReputation as string) || 0;
+            } catch {
+              userReputation = 0;
+            }
 
-            return {
-              id: item.id,
-              circleId: item.circleId,
-              title: item.title,
-              description: item.description,
-              userName: item.userName,
-              userScore: userScoreNumber,
+            const amountRaised = Number(item.amountToRaise) - amountLeftToRaise;
+            const backersCount =
+              Number(await fetchBackersCount(item.circleId)) || 0;
+
+            const fundingRequest: FundingRequest = {
+              id: String(item.id),
+              circleId: String(item.circleId),
+              title: String(item.title),
+              description: String(item.description),
+              userName: String(item.userName),
+              userScore: userReputation,
               amountRaised: amountRaised,
               targetAmount: Number(item.amountToRaise),
               daysRemaining: calculateDaysRemaining(item.endDate),
               backers: backersCount,
               termPeriod: String(item.termPeriod),
             };
+
+            return fundingRequest;
           })
       );
 
