@@ -319,7 +319,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-8 flex items-center justify-center">
         <div className="space-y-4 text-center">
           <div className="w-16 h-16 border-4 border-[#0052ff] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-gray-400">Loading amazing projects...</p>
+          <p className="text-gray-400">Loading Circle Feed...</p>
         </div>
       </div>
     );

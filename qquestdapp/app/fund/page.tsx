@@ -16,6 +16,7 @@ import { config } from "@/ConnectKit/Web3Provider";
 import { useRouter } from "next/navigation";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 import { motion } from "framer-motion";
+import { Suspense } from "react";
 
 interface FundingDetailsProps {
   userName: string;
@@ -51,17 +52,17 @@ const FundingDetails: React.FC<FundingDetailsProps> = ({
             height={48}
             className="rounded-2xl mr-3 border-2 border-blue-500"
           />
-          <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full w-4 h-4 border-2 border-gray-900"></div>
         </div>
         <div>
-          <div className="flex items-center">
-            <span className="font-semibold mr-2">{userName}</span>
-            <span className="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full text-sm">
-              @{userScore}
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">{userName}</span>
+
+            <span className="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full text-sm ml-auto">
+              Reputation-Score:{userScore}
             </span>
           </div>
           <a
-            href="#"
+            href="/profile"
             className="text-blue-400 text-sm hover:text-blue-300 transition-colors"
           >
             View profile
@@ -87,9 +88,8 @@ const FundingDetails: React.FC<FundingDetailsProps> = ({
         <span>{daysRemaining} days remaining</span>
       </div>
       <div className="mt-3 text-right">
-        <span className="text-gray-400 text-sm">Term period: </span>
-        <span className="bg-gray-800 px-3 py-1 rounded-full text-sm">
-          {termPeriod}
+        <span className="text-gray-400 text-sm">
+          Term period:{termPeriod} days{" "}
         </span>
       </div>
     </div>
@@ -214,7 +214,15 @@ const SuccessScreen: React.FC<{
   );
 };
 
-export default function FundPage() {
+export default function FundPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <FundPage />
+    </Suspense>
+  );
+}
+
+function FundPage() {
   const [amount, setAmount] = useState("0.000");
   const [fundingDetails, setFundingDetails] =
     useState<FundingDetailsProps | null>(null);
@@ -305,9 +313,10 @@ export default function FundPage() {
           .select(
             `
             id,
-            circleId,
+            user,
             title,
             endDate,
+            circleId,
             userName,
             termPeriod,
             description,
@@ -327,12 +336,19 @@ export default function FundPage() {
           args: [circleId],
         });
 
+        const fetchUserReputationScore = await readContract(config, {
+          abi,
+          address: circleContractAddress,
+          functionName: "getUserReputations",
+          args: [data?.user],
+        });
+
         const amountRaised =
           Number(data.amountToRaise) - Number(amountLeftToRaise);
 
         setFundingDetails({
           userName: data.userName,
-          userScore: data.userReputationScore,
+          userScore: Number(fetchUserReputationScore),
           title: data.title,
           description: data.description,
           termPeriod: data.termPeriod,
