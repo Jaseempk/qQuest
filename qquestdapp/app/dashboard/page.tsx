@@ -290,7 +290,7 @@ export default function Dashboard() {
               title: String(item.title),
               description: String(item.description),
               userName: String(item.userName),
-              userScore: userReputation,
+              userScore: Number(userReputation),
               amountRaised: amountRaised,
               targetAmount: Number(item.amountToRaise),
               daysRemaining: calculateDaysRemaining(item.endDate),
