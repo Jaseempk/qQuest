@@ -257,17 +257,17 @@ export default function Home() {
                 <Image
                   src="/images/talent-protocol-logo.png"
                   alt="Talent Protocol"
-                  width={150}
-                  height={40}
-                  className="opacity-80 hover:opacity-100 transition-opacity"
+                  width={280}
+                  height={70}
+                  className="opacity-90 hover:opacity-150 transition-opacity"
                 />
               </a>
 
               <Image
                 src="/images/qQuest-logo.png"
                 alt="qQuest"
-                width={40}
-                height={40}
+                width={50}
+                height={50}
               />
             </div>
             <p className="text-gray-300">

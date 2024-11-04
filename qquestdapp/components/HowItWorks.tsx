@@ -74,7 +74,7 @@ export const HowItWorks = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-          <p className="text-gray-400">Your journey to interest-free funding</p>
+          <p className="text-gray-400">Your journey to interest-free lending</p>
         </motion.div>
 
         <motion.div

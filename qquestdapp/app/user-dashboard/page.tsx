@@ -803,18 +803,7 @@ export default function Dashboard() {
                     </div>
                     <HoverCard>
                       <HoverCardTrigger>
-                        <div className="flex items-center space-x-2">
-                          <Shield
-                            className={`h-4 w-4 ${
-                              circle.reliability >= 95
-                                ? "text-green-400"
-                                : "text-yellow-400"
-                            }`}
-                          />
-                          <span className="text-sm text-gray-400">
-                            {circle.reliability}%
-                          </span>
-                        </div>
+                        <div className="flex items-center space-x-2"></div>
                       </HoverCardTrigger>
                       <HoverCardContent className="w-80 bg-black/90 border-blue-900/20 rounded-2xl">
                         <div className="space-y-2">
@@ -842,12 +831,14 @@ export default function Dashboard() {
                   />
                   <div className="mt-4 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Next Payment</span>
-                      <span className="font-medium">${circle.nextPayment}</span>
+                      <span className="text-gray-400">
+                        Next Payment:${circle.nextPayment}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Due Date</span>
-                      <span className="font-medium">{circle.paymentDate}</span>
+                      <span className="text-gray-400">
+                        Due Date:{circle.paymentDate}
+                      </span>
                     </div>
                   </div>
                   {circle.borrowed === circle.totalAmount && (
@@ -880,15 +871,3 @@ export default function Dashboard() {
     </TooltipProvider>
   );
 }
-
-/***
- * 
-circleId: "0xa1c8b2a01b173e3e1bc65ef08d1320f46a5360d0add92492b771d440ff1beb48"
-contributionAmount: 3
-contributionId: "0xc44920527f6395bf9f1c6f01918aa8a2c71dc4dd1b3818448539065c5a312a93"
-qQuestCircleDeets: 
-  endDate: "2024-11-21"
-  termPeriod: 18
-  title: "Buy an iphone16"
-  userReputationScore: null
- */
