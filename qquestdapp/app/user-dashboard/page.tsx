@@ -294,16 +294,16 @@ export default function Dashboard() {
           .from("qQuestContribution")
           .select(
             `
-        contributionId,
-        contributionAmount,
-        circleId,
-        qQuestCircleDeets:qQuestCircleDeets (
-          title,
-          endDate,
-          termPeriod,
-          userReputationScore
-        )
-      `
+            contributionId,
+            contributionAmount,
+            circleId,
+            qQuestCircleDeets:qQuestCircleDeets (
+              title,
+              endDate,
+              termPeriod,
+              userReputationScore
+            )
+          `
           )
           .eq("contributorAddress", userAddress);
 
@@ -330,26 +330,30 @@ export default function Dashboard() {
             status = "Killed";
           } else if (circleState[5] === 2) {
             status = "Redeemed";
-          } else if (circleState[5] == 3) {
+          } else if (circleState[5] === 3) {
             status = "Settled";
           } else {
             status = "Unknown";
           }
 
+          // Access the first item of qQuestCircleDeets array if it exists
+          const circleDeets = Array.isArray(contribution.qQuestCircleDeets)
+            ? contribution.qQuestCircleDeets[0]
+            : contribution.qQuestCircleDeets;
+
           return {
-            id: contribution?.contributionId,
-            circleName: contribution?.qQuestCircleDeets?.title,
-            amount: contribution?.contributionAmount,
+            id: contribution?.contributionId || "",
+            circleName: circleDeets?.title || "Untitled Circle",
+            amount: Number(contribution?.contributionAmount) || 0,
             status: status,
-            dueDate: new Date(
-              contribution.qQuestCircleDeets?.endDate
-            ).toLocaleDateString(),
-            members: 0, // You'll need to implement a way to track this
-            reliability: reputationScore,
-            repaidDate:
-              circleState[5] === 2
-                ? new Date().toLocaleDateString()
-                : undefined,
+            dueDate: circleDeets?.endDate
+              ? new Date(circleDeets.endDate).toLocaleDateString()
+              : new Date().toLocaleDateString(), // Provide a default date if none exists
+            members: 0,
+            reliability: Number(reputationScore) || 0,
+            ...(circleState[5] === 2 && {
+              repaidDate: new Date().toLocaleDateString(),
+            }),
           };
         })
       );
@@ -874,3 +878,15 @@ export default function Dashboard() {
     </TooltipProvider>
   );
 }
+
+/***
+ * 
+circleId: "0xa1c8b2a01b173e3e1bc65ef08d1320f46a5360d0add92492b771d440ff1beb48"
+contributionAmount: 3
+contributionId: "0xc44920527f6395bf9f1c6f01918aa8a2c71dc4dd1b3818448539065c5a312a93"
+qQuestCircleDeets: 
+  endDate: "2024-11-21"
+  termPeriod: 18
+  title: "Buy an iphone16"
+  userReputationScore: null
+ */
