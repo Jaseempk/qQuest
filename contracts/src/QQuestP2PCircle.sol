@@ -74,7 +74,7 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint256 public constant ETH_PRECISION = 1e18;
 
     // Minimum builder score required for certain actions
-    uint8 public constant MIN_BUILDER_SCORE = 25;
+    uint8 public constant MIN_BUILDER_SCORE = 50;
     // Minimum number of contributions required for certain actions
     uint8 public constant MIN_CONT_COUNT = 2;
     // Address of the Ethereum price feed
@@ -426,10 +426,6 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
             ? IERC20(i_usdcAddress)
             : IERC20(i_usdtAddress);
 
-        token.approve(
-            address(this),
-            uint256(uint256(amountToContribute) * TOKEN_DECIMAL_PRECISION)
-        );
         // Transfer the contribution amount from the user to the contract
         token.transferFrom(
             msg.sender,
