@@ -307,6 +307,8 @@ export default function Dashboard() {
           )
           .eq("contributorAddress", userAddress);
 
+      console.log("contributionDaaataaaa:", contributionData);
+
       if (contributionError) throw contributionError;
 
       // Process contributions and fetch circle states

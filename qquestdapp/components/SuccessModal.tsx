@@ -10,7 +10,19 @@ import { AnimatedCheck } from "./ui/AnimatedCheck";
 import { AnimatedX } from "./ui/AnimatedX";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const SuccessModal = ({ isOpen, onClose, isRedemption, circleName }) => {
+interface SuccessModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isRedemption: boolean;
+  circleName: string;
+}
+
+export const SuccessModal: React.FC<SuccessModalProps> = ({
+  isOpen,
+  onClose,
+  isRedemption,
+  circleName,
+}) => {
   const gradientColors = isRedemption
     ? {
         icon: "from-green-500 to-emerald-400",

@@ -48,6 +48,11 @@ interface CreateCircleFormProps {
     userScore: number;
   }) => void;
 }
+interface QQuestUserProfile {
+  userAddy: string;
+  userName: string;
+  // Add other fields from your table as needed
+}
 
 export default function CreateCircleForm({
   onCircleCreated,
@@ -114,21 +119,42 @@ export default function CreateCircleForm({
 
     fetchBuilderScore();
   }, []);
-
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const account = getAccount(config);
-        console.log("address:", account.address);
-        let { data: qQuestUserProfile, error } = await supabase
+        if (!account?.address) {
+          console.log("No wallet address found");
+          return;
+        }
+
+        const { data: qQuestUserProfile, error } = await supabase
           .from("qQuestUserProfile")
           .select("*")
-          .eq("userAddy", account?.address);
+          .eq("userAddy", account.address);
+
+        if (error) {
+          throw error;
+        }
+
+        // Type guard to ensure data exists and is an array
+        if (!qQuestUserProfile || !Array.isArray(qQuestUserProfile)) {
+          console.log("No user profile found");
+          return;
+        }
+
         console.log("data:", qQuestUserProfile);
-        console.log("userName:", qQuestUserProfile[0]?.userName);
-        setUserName(qQuestUserProfile[0]?.userName);
+
+        const userProfile = qQuestUserProfile[0];
+        if (userProfile) {
+          console.log("userName:", userProfile.userName);
+          setUserName(userProfile.userName);
+        } else {
+          console.log("No user profile found for this address");
+          setUserName(""); // or whatever default value you want to use
+        }
       } catch (error) {
-        console.error("Error fetching builder score:", error);
+        console.error("Error fetching user profile:", error);
       }
     };
 

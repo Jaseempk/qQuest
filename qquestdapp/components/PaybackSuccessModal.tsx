@@ -9,7 +9,14 @@ import { Sparkles } from "lucide-react";
 import { AnimatedCheck } from "./ui/AnimatedCheck";
 import { motion } from "framer-motion";
 
-export const PaybackSuccessModal = ({
+interface PaybackSuccessModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  circleName: string;
+  amount: number;
+}
+
+export const PaybackSuccessModal: React.FC<PaybackSuccessModalProps> = ({
   isOpen,
   onClose,
   circleName,
@@ -48,8 +55,8 @@ export const PaybackSuccessModal = ({
           </div>
 
           <p className="text-center text-base mb-4 text-gray-300">
-            Successfully repaid for circle "
-            <span className="text-white font-medium">{circleName}</span>"
+            Successfully repaid for circle &quot;
+            <span className="text-white font-medium">{circleName}</span>&quot;
           </p>
 
           <motion.div
