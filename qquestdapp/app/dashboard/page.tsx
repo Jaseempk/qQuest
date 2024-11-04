@@ -35,6 +35,20 @@ interface FundingRequest {
   termPeriod: string;
 }
 
+interface QQuestCircleDeets {
+  id: string;
+  title: string;
+  user: string;
+  endDate: string;
+  leadTime: string;
+  circleId: string;
+  userName: string;
+  termPeriod: number;
+  description: string;
+  amountToRaise: number;
+  userReputationScore: number;
+}
+
 const FundingRequestCard = ({
   request,
   onFundClick,
@@ -240,19 +254,17 @@ export default function Dashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      if (data) {
-        console.log("dataa:", data);
-      }
+      if (!data) return;
 
       const currentDate = new Date();
 
-      const requestsWithAdditionalData = await Promise.all(
+      const requestsWithAdditionalData: FundingRequest[] = await Promise.all(
         data
-          .filter((item) => {
+          .filter((item: QQuestCircleDeets) => {
             const leadTime = new Date(item.leadTime);
             return leadTime > currentDate;
           })
-          .map(async (item) => {
+          .map(async (item: QQuestCircleDeets) => {
             const amountLeftToRaise = await fetchAmountLeftToRaise(
               item.circleId
             );
@@ -262,18 +274,22 @@ export default function Dashboard() {
               Number(item.amountToRaise) - Number(amountLeftToRaise);
             const backersCount = await fetchBackersCount(item.circleId);
 
+            // Ensure userReputation is a number
+            const userScoreNumber =
+              typeof userReputation === "number" ? userReputation : 0; // or some default value
+
             return {
               id: item.id,
               circleId: item.circleId,
               title: item.title,
               description: item.description,
               userName: item.userName,
-              userScore: userReputation,
+              userScore: userScoreNumber,
               amountRaised: amountRaised,
-              targetAmount: item.amountToRaise,
+              targetAmount: Number(item.amountToRaise),
               daysRemaining: calculateDaysRemaining(item.endDate),
               backers: backersCount,
-              termPeriod: item.termPeriod,
+              termPeriod: String(item.termPeriod),
             };
           })
       );
