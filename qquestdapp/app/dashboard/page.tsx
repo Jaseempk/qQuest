@@ -20,9 +20,11 @@ import { supabase } from "@/supabaseConfig";
 import { readContract } from "@wagmi/core";
 import { abi, circleContractAddress } from "@/abi/CircleAbi";
 import { config } from "@/ConnectKit/Web3Provider";
+import UserProfileModal from "@/components/UserProfileModal";
 
 interface FundingRequest {
   id: string;
+  user: string;
   circleId: string;
   title: string;
   description: string;
@@ -57,6 +59,12 @@ const FundingRequestCard = ({
   onFundClick: (request: FundingRequest) => void;
 }) => {
   const progress = (request.amountRaised / request.targetAmount) * 100;
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState({
+    address: "",
+    name: "",
+    score: 0,
+  });
 
   return (
     <motion.div
@@ -119,6 +127,15 @@ const FundingRequestCard = ({
         <Link
           href="#"
           className="ml-auto text-sm text-[#0052ff] hover:text-[#3380ff] transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            setCurrentUser({
+              address: request.user,
+              name: request.userName,
+              score: request.userScore,
+            });
+            setIsProfileModalOpen(true);
+          }}
         >
           View profile
         </Link>
@@ -166,6 +183,13 @@ const FundingRequestCard = ({
           Fund now
         </button>
       </div>
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userAddress={currentUser.address}
+        userName={currentUser.name}
+        userScore={currentUser.score}
+      />
     </motion.div>
   );
 };
@@ -285,6 +309,7 @@ export default function Dashboard() {
 
             const fundingRequest: FundingRequest = {
               id: String(item.id),
+              user: String(item.user),
               circleId: String(item.circleId),
               title: String(item.title),
               description: String(item.description),

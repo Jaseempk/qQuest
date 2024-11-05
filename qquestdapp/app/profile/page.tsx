@@ -63,7 +63,6 @@ export default function ProfilePage() {
         setUserProfile(data);
       }
 
-      // Fetch user reputation score
       try {
         const fetchUserReputationScore = await readContract(config, {
           abi,

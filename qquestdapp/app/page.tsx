@@ -132,7 +132,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Hero Section */}
       <div className="relative min-h-screen flex flex-col items-center justify-center p-4">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
 
@@ -186,7 +185,6 @@ export default function Home() {
         </motion.div>
       </div>
 
-      {/* Features Section */}
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
