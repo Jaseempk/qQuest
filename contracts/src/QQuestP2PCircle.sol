@@ -74,7 +74,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
     uint256 public constant ETH_PRECISION = 1e18;
 
     // Minimum builder score required for certain actions
-    uint8 public constant MIN_BUILDER_SCORE = 50;
+    uint8 public constant MIN_BUILDER_SCORE = 25;
+    uint8 public constant TRUSTED_USER_SCORE = 50;
     // Minimum number of contributions required for certain actions
     uint8 public constant MIN_CONT_COUNT = 2;
     // Address of the Ethereum price feed
@@ -238,11 +239,12 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
      */
     modifier validEligibility(uint16 builderScore) {
         if (
-            builderScore < MIN_BUILDER_SCORE &&
+            builderScore < TRUSTED_USER_SCORE &&
             userToContributionCount[msg.sender] < MIN_CONT_COUNT
         ) {
             revert QQuest__IneligibleForCircling();
         }
+
         _;
     }
 
@@ -290,6 +292,8 @@ contract QQuestP2PCircle is AccessControl, QQuestReputationManagment {
         uint16 builderScore,
         bool isUSDC
     ) public payable notBanned validEligibility(builderScore) {
+        if (builderScore < MIN_BUILDER_SCORE)
+            revert QQuest__IneligibleForCircling();
         // Check if lead time is in the future
         if (leadTimeDuration < block.timestamp)
             revert QQuest__LeadTimeCanOnlyBeInFuture();

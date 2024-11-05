@@ -493,7 +493,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-900 via-gray-800 to-blue-900 text-white p-8 rounded-3xl">
         <header className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-indigo-300 text-transparent bg-clip-text">
+            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Welcome back, {account?.address?.slice(0, 5)}...
               {account?.address?.slice(-2)}
             </h1>
@@ -503,7 +503,7 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={() => router.push("/create-circle")}
-            className="bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-6 py-3"
+            className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-300 shadow-lg shadow-blue-500/25 rounded-xl"
           >
             Create New Circle
           </Button>
@@ -514,22 +514,22 @@ export default function Dashboard() {
           onValueChange={setActiveTab}
           className="space-y-8"
         >
-          <TabsList className="bg-gray-800/80 p-1 rounded-full backdrop-blur-sm border border-gray-700">
+          <TabsList className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 p-1 rounded-full backdrop-blur-sm">
             <TabsTrigger
               value="overview"
-              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-500 transition-all duration-300"
+              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 transition-all duration-300"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="contributions"
-              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-500 transition-all duration-300"
+              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 transition-all duration-300"
             >
               Contributions
             </TabsTrigger>
             <TabsTrigger
               value="circles"
-              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-500 transition-all duration-300"
+              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 transition-all duration-300"
             >
               My Circles
             </TabsTrigger>
@@ -537,7 +537,7 @@ export default function Dashboard() {
 
           <TabsContent value="overview" className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl">
+              <Card className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-sm font-medium">
                     Total Contributed
@@ -557,7 +557,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl">
+              <Card className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl">
                 {" "}
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-sm font-medium">
@@ -576,7 +576,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl">
+              <Card className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl">
                 {" "}
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-sm font-medium">
@@ -599,7 +599,7 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm shadow-lg shadow-blue-900/10 rounded-3xl">
+              <Card className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl">
                 <CardHeader>
                   <CardTitle className="text-lg">Recent Activity</CardTitle>
                 </CardHeader>
@@ -639,7 +639,7 @@ export default function Dashboard() {
                               )}
                             </div>
                           </HoverCardTrigger>
-                          <HoverCardContent className="w-80 bg-black/90 border-blue-900/20 rounded-2xl">
+                          <HoverCardContent className="w-80 bg-gradient-to-b from-gray-800/95 to-gray-900/95 border border-gray-700/50 rounded-2xl">
                             <div className="space-y-2">
                               <h4 className="text-sm font-semibold">
                                 {activity.circle}
@@ -662,7 +662,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800/80 border-gray-700 backdrop-blur-sm shadow-lg shadow-blue-900/10 rounded-3xl">
+              <Card className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl">
                 <CardHeader>
                   <CardTitle className="text-lg">Upcoming Payments</CardTitle>
                 </CardHeader>
@@ -672,7 +672,7 @@ export default function Dashboard() {
                       {activeCircles.map((circle) => (
                         <div
                           key={circle.id}
-                          className="p-4 rounded-2xl bg-gray-900/80 hover:bg-gray-900/90 transition-all duration-200"
+                          className="p-4 rounded-2xl bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 hover:bg-gray-800/60 transition-all duration-200"
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div>
@@ -681,7 +681,7 @@ export default function Dashboard() {
                                 Next payment: ${circle.nextPayment}
                               </p>
                             </div>
-                            <Badge className="bg-gradient-to-r from-black to-blue-900 rounded-full px-3 py-1">
+                            <Badge className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-full px-3 py-1">
                               {circle.paymentDate}
                             </Badge>
                           </div>
@@ -714,7 +714,7 @@ export default function Dashboard() {
             {contributions.map((contribution) => (
               <Card
                 key={contribution.id}
-                className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl"
+                className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -794,7 +794,7 @@ export default function Dashboard() {
             {activeCircles.map((circle) => (
               <Card
                 key={circle.id}
-                className="bg-gray-800/80 border-gray-700 backdrop-blur-sm hover:bg-gray-800/90 transition-all duration-300 shadow-lg shadow-blue-900/10 rounded-3xl"
+                className="bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/60 transition-all duration-300 shadow-lg shadow-blue-500/10 rounded-3xl"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -808,7 +808,7 @@ export default function Dashboard() {
                       <HoverCardTrigger>
                         <div className="flex items-center space-x-2"></div>
                       </HoverCardTrigger>
-                      <HoverCardContent className="w-80 bg-black/90 border-blue-900/20 rounded-2xl">
+                      <HoverCardContent className="w-80 bg-gradient-to-b from-gray-800/95 to-gray-900/95 border border-gray-700/50 rounded-2xl">
                         <div className="space-y-2">
                           <h4 className="text-sm font-semibold">
                             Circle Reliability Score
@@ -830,7 +830,7 @@ export default function Dashboard() {
                 <CardContent>
                   <Progress
                     value={(circle.borrowed / circle.totalAmount) * 100}
-                    className="h-2 rounded-full"
+                    className="h-2 rounded-full bg-gray-800/50"
                   />
                   <div className="mt-4 space-y-2">
                     <div className="flex justify-between text-sm">

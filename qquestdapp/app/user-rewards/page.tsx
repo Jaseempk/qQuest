@@ -74,7 +74,7 @@ export default function RewardsPage() {
           We're cooking quarterly rewards & perks for you. Stay tuned!
         </p>
         <motion.div
-          className="flex items-center justify-center space-x-2 bg-gradient-to-r from-[#0052ff] to-[#3380ff] rounded-full px-6 py-3 text-white font-semibold"
+          className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-[#0052ff] to-[#3380ff] rounded-full px-12 py-3 text-white font-semibold"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
