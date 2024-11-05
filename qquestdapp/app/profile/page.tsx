@@ -187,11 +187,11 @@ export default function ProfilePage() {
                 <CardContent className="space-y-2">
                   <div>
                     <Label className="text-gray-400">Active Circles</Label>
-                    <p>3</p>
+                    <p></p>
                   </div>
                   <div>
                     <Label className="text-gray-400">Total Contributed</Label>
-                    <p>$2,500</p>
+                    <p></p>
                   </div>
                   <div>
                     <Label className="text-gray-400">
