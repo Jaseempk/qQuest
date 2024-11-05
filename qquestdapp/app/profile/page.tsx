@@ -92,7 +92,10 @@ export default function ProfilePage() {
       );
     }
   };
-
+  const truncateAddress = (address: string | undefined) => {
+    if (!address) return "Not connected";
+    return `${address.slice(0, 4)}...${address.slice(-2)}`;
+  };
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-8">
       <div className="max-w-4xl mx-auto">
@@ -168,8 +171,8 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <Label className="text-gray-400">Wallet Address</Label>
-                    <p className="truncate">
-                      {userProfile?.userAddy || "Not connected"}
+                    <p className="font-mono">
+                      {truncateAddress(userProfile?.userAddy)}
                     </p>
                   </div>
                 </CardContent>
@@ -298,7 +301,7 @@ export default function ProfilePage() {
                       id="wallet-address"
                       value={userProfile?.userAddy || ""}
                       readOnly
-                      className="mt-1 bg-gray-700"
+                      className="mt-1 bg-gray-700 rounded-xl"
                     />
                   </div>
                   <Button className="w-full">Disconnect Wallet</Button>
@@ -313,10 +316,10 @@ export default function ProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-400 rounded-xl">
+                  <p className="text-gray-400 ">
                     No payment methods added yet.
                   </p>
-                  <Button variant="outline" className="mt-4">
+                  <Button variant="outline" className="mt-4 rounded-xl">
                     Add Payment Method
                   </Button>
                 </CardContent>
