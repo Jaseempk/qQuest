@@ -15,6 +15,7 @@ import {
   Star,
   Shield,
 } from "lucide-react";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { supabase } from "@/supabaseConfig";
 import { readContract } from "@wagmi/core";
@@ -25,6 +26,7 @@ import UserProfileModal from "@/components/UserProfileModal";
 interface FundingRequest {
   id: string;
   user: string;
+  avatarurl: string;
   circleId: string;
   title: string;
   description: string;
@@ -65,6 +67,17 @@ const FundingRequestCard = ({
     name: "",
     score: 0,
   });
+  const getAvatarContent = () => {
+    if (request?.avatarurl !== "null") {
+      return <AvatarImage src={request?.avatarurl} alt="User Avatar" />;
+    } else {
+      return (
+        <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
+          {request?.userName?.charAt(0) || "?"}
+        </div>
+      );
+    }
+  };
 
   return (
     <motion.div
@@ -91,13 +104,9 @@ const FundingRequestCard = ({
 
       <div className="flex items-center mb-4 bg-gray-800/50 rounded-xl p-3 border border-gray-700/30">
         <div className="relative">
-          <Image
-            src="/images/image 136.png"
-            alt={request.userName}
-            width={40}
-            height={40}
-            className="rounded-full ring-2 ring-[#0052ff]/20"
-          />
+          <Avatar className="w-10 h-10 border-2 border-blue-500">
+            {getAvatarContent()}
+          </Avatar>
           <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#0052ff] to-[#3380ff] rounded-full p-1">
             <Sparkles className="w-3 h-3 text-white" />
           </div>
@@ -302,6 +311,11 @@ export default function Dashboard() {
             } catch {
               userReputation = 0;
             }
+            const { data: userData, error } = await supabase
+              .from("qQuestUserProfile")
+              .select("*")
+              .eq("userAddy", item.user)
+              .single();
 
             const amountRaised = Number(item.amountToRaise) - amountLeftToRaise;
             const backersCount =
@@ -310,6 +324,7 @@ export default function Dashboard() {
             const fundingRequest: FundingRequest = {
               id: String(item.id),
               user: String(item.user),
+              avatarurl: String(userData.avatarUrl),
               circleId: String(item.circleId),
               title: String(item.title),
               description: String(item.description),

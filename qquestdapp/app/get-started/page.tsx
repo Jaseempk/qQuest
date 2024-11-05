@@ -134,6 +134,8 @@ export default function GetStarted() {
         avatarUrl = supabase.storage
           .from("avatars")
           .getPublicUrl(`${account.address}_avatar.png`).data.publicUrl;
+
+        console.log("avatarUrl:", avatarUrl);
       }
 
       // Insert user data into Supabase
