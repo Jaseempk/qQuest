@@ -117,7 +117,7 @@ const FundingRequestCard = ({
           </div>
         </div>
         <Link
-          href="#"
+          href="/profile"
           className="ml-auto text-sm text-[#0052ff] hover:text-[#3380ff] transition-colors"
         >
           View profile

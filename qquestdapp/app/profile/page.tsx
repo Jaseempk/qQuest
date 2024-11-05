@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,9 +28,70 @@ import {
   Edit2,
   Wallet,
 } from "lucide-react";
+import { readContract, getAccount } from "@wagmi/core";
+import { supabase } from "@/supabaseConfig";
+import { abi, circleContractAddress } from "@/abi/CircleAbi";
+import { config } from "@/ConnectKit/Web3Provider";
+
+interface UserProfile {
+  userAddy: string;
+  userName: string;
+  avatarUrl: string;
+}
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [reputationScore, setReputationScore] = useState<number | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const account = getAccount(config);
+      if (!account?.address) return;
+
+      // Fetch user profile from Supabase
+      const { data, error } = await supabase
+        .from("qQuestUserProfile")
+        .select("*")
+        .eq("userAddy", account.address)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
+      } else if (data) {
+        setUserProfile(data);
+      }
+
+      // Fetch user reputation score
+      try {
+        const fetchUserReputationScore = await readContract(config, {
+          abi,
+          address: circleContractAddress,
+          functionName: "getUserReputations",
+          args: [account.address],
+        });
+
+        setReputationScore(Number(fetchUserReputationScore));
+      } catch (error) {
+        console.error("Error fetching reputation score:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const getAvatarContent = () => {
+    if (userProfile?.avatarUrl) {
+      return <AvatarImage src={userProfile.avatarUrl} alt="User Avatar" />;
+    } else {
+      return (
+        <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+          {userProfile?.userName?.charAt(0) || "?"}
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-8">
@@ -36,20 +99,23 @@ export default function ProfilePage() {
         <header className="mb-8 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <Avatar className="w-20 h-20 border-2 border-blue-500">
-              <AvatarImage
-                src="https://avatar.vercel.sh/rauchg.png"
-                alt="User Avatar"
-              />
-              <AvatarFallback>JD</AvatarFallback>
+              {getAvatarContent()}
             </Avatar>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-blue-200 text-transparent bg-clip-text">
-                John Doe
+                {userProfile?.userName || "Anonymous User"}
               </h1>
-              <p className="text-gray-400">@johndoe</p>
+              <p className="text-gray-400">
+                @
+                {userProfile?.userName?.toLowerCase().replace(/\s+/g, "") ||
+                  "anonymous"}
+              </p>
             </div>
           </div>
-          <Button variant="outline" className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            className="flex rounded-xl items-center space-x-2"
+          >
             <Edit2 className="w-4 h-4" />
             <span>Edit Profile</span>
           </Button>
@@ -63,19 +129,19 @@ export default function ProfilePage() {
           <TabsList className="bg-gray-800/50 p-1 rounded-full">
             <TabsTrigger
               value="overview"
-              className="rounded-full px-4 py-2 data-[state=active]:bg-blue-500"
+              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 transition-all duration-300"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="activity"
-              className="rounded-full px-4 py-2 data-[state=active]:bg-blue-500"
+              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 transition-all duration-300"
             >
               Activity
             </TabsTrigger>
             <TabsTrigger
               value="settings"
-              className="rounded-full px-4 py-2 data-[state=active]:bg-blue-500"
+              className="rounded-full px-6 py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 transition-all duration-300"
             >
               Settings
             </TabsTrigger>
@@ -93,11 +159,18 @@ export default function ProfilePage() {
                 <CardContent className="space-y-2">
                   <div>
                     <Label className="text-gray-400">Username</Label>
-                    <p>@johndoe</p>
+                    <p>
+                      @
+                      {userProfile?.userName
+                        ?.toLowerCase()
+                        .replace(/\s+/g, "") || "anonymous"}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-gray-400">Wallet Address</Label>
-                    <p className="truncate">0x1234...5678</p>
+                    <p className="truncate">
+                      {userProfile?.userAddy || "Not connected"}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -119,13 +192,12 @@ export default function ProfilePage() {
                     <p>$2,500</p>
                   </div>
                   <div>
-                    <Label className="text-gray-400">Reputation Score</Label>
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-500/20 text-green-400"
-                    >
-                      98%
-                    </Badge>
+                    <Label className="text-gray-400">
+                      Reputation Score:{" "}
+                      {reputationScore !== null
+                        ? `${reputationScore}`
+                        : "Loading..."}
+                    </Label>
                   </div>
                 </CardContent>
               </Card>
@@ -177,6 +249,12 @@ export default function ProfilePage() {
                     </li>
                   ))}
                 </ul>
+                <Button
+                  className="w-full rounded-xl mt-4 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
+                  onClick={() => router.push("/user-dashboard")}
+                >
+                  View Full Dashboard
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -218,7 +296,7 @@ export default function ProfilePage() {
                     <Label htmlFor="wallet-address">Wallet Address</Label>
                     <Input
                       id="wallet-address"
-                      value="0x1234...5678"
+                      value={userProfile?.userAddy || ""}
                       readOnly
                       className="mt-1 bg-gray-700"
                     />
@@ -235,7 +313,9 @@ export default function ProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-400">No payment methods added yet.</p>
+                  <p className="text-gray-400 rounded-xl">
+                    No payment methods added yet.
+                  </p>
                   <Button variant="outline" className="mt-4">
                     Add Payment Method
                   </Button>
