@@ -158,7 +158,9 @@ export default function UserProfileModal({
 
             <div className="text-center pb-4">
               <p className="text-sm text-gray-400 mb-1">Member since</p>
-              <p className="text-base font-medium text-white">March 15, 2024</p>
+              <p className="text-base font-medium text-white">
+                October 28, 2024
+              </p>
             </div>
           </motion.div>
         </div>

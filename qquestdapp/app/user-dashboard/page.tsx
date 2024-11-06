@@ -59,17 +59,7 @@ import { formatDistanceToNow } from "date-fns";
 import { config } from "@/ConnectKit/Web3Provider";
 import { SuccessModal } from "@/components/SuccessModal";
 import { PaybackSuccessModal } from "@/components/PaybackSuccessModal";
-
-interface CircleData {
-  creator: string;
-  fundGoalValue: number;
-  leadTimeDuration: number;
-  paymentDueBy: number;
-  collateralAmount: number;
-  state: number; // 0: Active, 1: Killed, 2: Redeemed
-  isRepaymentOnTime: boolean;
-  isUSDC: boolean;
-}
+import ContributionRedemptionModal from "@/components/ContributionRedemptionModal";
 
 interface ContributionDetails {
   id: number;
@@ -137,12 +127,18 @@ export default function Dashboard() {
     circleName: "",
     amount: 0,
   });
+  const [isContributionRedeemed, setIsContributionRedeemed] = useState(false);
 
   const [stats, setStats] = useState({
     totalContributed: 0,
     activeCirclesCount: 0,
     totalBorrowed: 0,
     nextPaymentDue: "",
+  });
+  const [showRedemptionModal, setShowRedemptionModal] = useState(false);
+  const [redeemedContribution, setRedeemedContribution] = useState({
+    amount: 0,
+    circleName: "",
   });
 
   const handleCircleAction = async (
@@ -452,17 +448,36 @@ export default function Dashboard() {
   }, []);
 
   const handleRedeem = async (contributionId: number) => {
-    // Implement redeem logic
-    console.log(`Redeeming contribution ${contributionId}`);
+    try {
+      console.log(`Redeeming contribution ${contributionId}`);
 
-    const { request } = await simulateContract(config, {
-      abi,
-      address: circleContractAddress,
-      functionName: "redeemContributions",
-      args: [contributionId],
-    });
+      const { request } = await simulateContract(config, {
+        abi,
+        address: circleContractAddress,
+        functionName: "redeemContributions",
+        args: [contributionId],
+      });
 
-    const result = await writeContract(config, request);
+      const result = await writeContract(config, request);
+
+      // Find the redeemed contribution
+      const redeemedContrib = contributions.find(
+        (c) => c.id === contributionId
+      );
+      if (redeemedContrib) {
+        setRedeemedContribution({
+          amount: redeemedContrib.amount,
+          circleName: redeemedContrib.circleName,
+        });
+        setShowRedemptionModal(true);
+      }
+
+      setIsContributionRedeemed(true);
+      await fetchDashboardData(); // Refresh the dashboard data
+    } catch (error) {
+      console.error("Error redeeming contribution:", error);
+      // Handle error (e.g., show an error message to the user)
+    }
   };
 
   const handleCollateralWIthdrawal = async (circleId: string) => {
@@ -786,14 +801,22 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  {contribution.status === "Settled" && (
-                    <Button
-                      onClick={() => handleRedeem(contribution.id)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
-                    >
-                      Redeem Contribution
-                    </Button>
-                  )}
+                  {contribution.status === "Settled" &&
+                    (isContributionRedeemed ? (
+                      <Button
+                        disabled
+                        className="w-full bg-gray-600 cursor-not-allowed opacity-75 rounded-full px-4 py-3 text-gray-200"
+                      >
+                        Contributions Redeemed
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleRedeem(contribution.id)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
+                      >
+                        Redeem Contribution
+                      </Button>
+                    ))}
                 </CardFooter>
               </Card>
             ))}
@@ -878,6 +901,12 @@ export default function Dashboard() {
           onClose={() => setShowPaybackSuccessModal(false)}
           circleName={paybackSuccessInfo.circleName}
           amount={paybackSuccessInfo.amount}
+        />
+        <ContributionRedemptionModal
+          isOpen={showRedemptionModal}
+          onClose={() => setShowRedemptionModal(false)}
+          contributionAmount={redeemedContribution.amount}
+          circleName={redeemedContribution.circleName}
         />
       </div>
     </TooltipProvider>

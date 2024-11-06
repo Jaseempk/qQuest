@@ -92,9 +92,9 @@ const FundingRequestCard = ({
           <h3 className="text-xl font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
             {request.title}
           </h3>
-          <p className="text-sm text-gray-400 mt-1 line-clamp-2">
+          {/* <p className="text-sm text-gray-400 mt-1 line-clamp-2">
             {request.description}
-          </p>
+          </p> */}
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-400">Term period</p>
@@ -274,8 +274,6 @@ export default function Dashboard() {
 
       data.circles.forEach((circle: any, index: number) => {
         console.log(`\nCircle ${index + 1}:`);
-        console.log("Contribution Amount:", circle.contributionAmount);
-        console.log("Contributors:", circle.contributors);
       });
 
       const totalContributors = data.circles.reduce(
