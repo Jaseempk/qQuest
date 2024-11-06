@@ -203,13 +203,13 @@ export default function Dashboard() {
             </DialogHeader>
             <DialogFooter className="flex space-x-4">
               <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl"
                 onClick={() => handleCircleAction(circle.circleId, true)}
               >
                 Redeem Circle
               </Button>
               <Button
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 bg-red-600 hover:bg-red-700 rounded-xl"
                 onClick={() => handleCircleAction(circle.circleId, false)}
               >
                 Kill Circle
@@ -451,9 +451,18 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  const handleRedeem = (contributionId: number) => {
+  const handleRedeem = async (contributionId: number) => {
     // Implement redeem logic
     console.log(`Redeeming contribution ${contributionId}`);
+
+    const { request } = await simulateContract(config, {
+      abi,
+      address: circleContractAddress,
+      functionName: "redeemContributions",
+      args: [contributionId],
+    });
+
+    const result = await writeContract(config, request);
   };
 
   const handleCollateralWIthdrawal = async (circleId: string) => {

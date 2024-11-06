@@ -198,6 +198,7 @@ const FundingRequestCard = ({
         userAddress={currentUser.address}
         userName={currentUser.name}
         userScore={currentUser.score}
+        renderAvatar={getAvatarContent} // Pass the avatar render function
       />
     </motion.div>
   );

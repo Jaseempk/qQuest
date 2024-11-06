@@ -278,7 +278,7 @@ export default function CreateCircleForm({
       if (hash) {
         // Wait for the transaction to be indexed by The Graph
         // The time needed may vary based on network and indexing speed
-        await new Promise((resolve) => setTimeout(resolve, 15000));
+        await new Promise((resolve) => setTimeout(resolve, 20000));
 
         // Fetch the actual circleId from The Graph
         const circleId = await fetchLatestCircleId(account?.address || "");
