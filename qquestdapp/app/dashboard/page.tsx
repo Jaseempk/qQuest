@@ -22,6 +22,8 @@ import { readContract } from "@wagmi/core";
 import { abi, circleContractAddress } from "@/abi/CircleAbi";
 import { config } from "@/ConnectKit/Web3Provider";
 import UserProfileModal from "@/components/UserProfileModal";
+import { GET_CIRCLE_DATA } from "@/lib/apollo/queries";
+import { client } from "@/lib/apollo/apollo-config";
 
 interface FundingRequest {
   id: string;
@@ -260,8 +262,34 @@ export default function Dashboard() {
   };
 
   const fetchBackersCount = async (circleId: string) => {
-    // Implement this based on your data source
-    return 0;
+    try {
+      const { data } = await client.query({
+        query: GET_CIRCLE_DATA,
+        variables: {
+          circleId: circleId,
+        },
+      });
+
+      console.log("All Circles Data:", data.circles);
+
+      data.circles.forEach((circle: any, index: number) => {
+        console.log(`\nCircle ${index + 1}:`);
+        console.log("Contribution Amount:", circle.contributionAmount);
+        console.log("Contributors:", circle.contributors);
+      });
+
+      const totalContributors = data.circles.reduce(
+        (total: number, circle: any) =>
+          total +
+          (Array.isArray(circle.contributors) ? circle.contributors.length : 1),
+        0
+      );
+
+      return totalContributors;
+    } catch (error) {
+      console.error("Error fetching circle data:", error);
+      return 0;
+    }
   };
 
   const fetchFundingRequests = async () => {

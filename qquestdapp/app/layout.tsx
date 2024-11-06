@@ -7,6 +7,8 @@ import { WagmiProvider, createConfig } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 import { http } from "viem";
 import { Web3Provider } from "@/ConnectKit/Web3Provider";
+import { ApolloProvider } from "@apollo/client";
+import { client } from "@/lib/apollo/apollo-config";
 
 const wagmiConfig = createConfig({
   chains: [base, baseSepolia],
@@ -28,11 +30,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <WagmiProvider config={wagmiConfig}>
-          <QueryClientProvider client={queryClient}>
-            <Web3Provider>{children}</Web3Provider>
-          </QueryClientProvider>
-        </WagmiProvider>
+        <ApolloProvider client={client}>
+          <WagmiProvider config={wagmiConfig}>
+            <QueryClientProvider client={queryClient}>
+              <Web3Provider>{children}</Web3Provider>
+            </QueryClientProvider>
+          </WagmiProvider>
+        </ApolloProvider>
       </body>
     </html>
   );
