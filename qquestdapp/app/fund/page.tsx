@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 import { motion } from "framer-motion";
 import { Suspense } from "react";
+import { FundLoadingScreen } from "@/components/FundLoadingScreen";
 
 interface FundingDetailsProps {
   userName: string;
@@ -364,9 +365,7 @@ function FundPage() {
   }, [circleId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white p-6">Loading...</div>
-    );
+    return <FundLoadingScreen />;
   }
 
   if (error || !fundingDetails) {

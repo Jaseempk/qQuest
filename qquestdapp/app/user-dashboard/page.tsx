@@ -141,6 +141,8 @@ export default function Dashboard() {
     circleName: "",
   });
 
+  const [isWithdrawalSuccess, setIsWithdrawalSuccess] = useState(false);
+
   const handleCircleAction = async (
     circleId: string,
     isReadyToRedeem: boolean
@@ -186,7 +188,7 @@ export default function Dashboard() {
       return (
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3">
+            <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-xl px-4 py-3">
               Manage Circle
             </Button>
           </DialogTrigger>
@@ -202,13 +204,13 @@ export default function Dashboard() {
                 className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl"
                 onClick={() => handleCircleAction(circle.circleId, true)}
               >
-                Redeem Circle
+                Redeem
               </Button>
               <Button
                 className="flex-1 bg-red-600 hover:bg-red-700 rounded-xl"
                 onClick={() => handleCircleAction(circle.circleId, false)}
               >
-                Kill Circle
+                Kill
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -240,13 +242,22 @@ export default function Dashboard() {
       );
     }
     // Case 3: Circle is Redeemed (state = 2)
-    if (circleState[5] === 3) {
+    if (circleState[5] === 3 && isWithdrawalSuccess !== true) {
       return (
         <Button
-          onClick={() => handleCollateralWIthdrawal(circle.circleId)}
+          onClick={() => handleCollateralWithdrawal(circle.circleId)}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3"
         >
           Withdraw Collateral
+        </Button>
+      );
+    }
+
+    if (circleState[5] === 3 && isWithdrawalSuccess === true) {
+      return (
+        <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 transition-all duration-300 shadow-lg shadow-blue-900/20 rounded-full px-4 py-3">
+          <AlertCircle className="h-4 w-4 text-blue-500 mr-2" />
+          Collateral Withdrawn
         </Button>
       );
     }
@@ -480,7 +491,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleCollateralWIthdrawal = async (circleId: string) => {
+  const handleCollateralWithdrawal = async (circleId: string) => {
     const { request } = await simulateContract(config, {
       abi,
       address: circleContractAddress,
@@ -489,6 +500,7 @@ export default function Dashboard() {
     });
 
     const result = await writeContract(config, request);
+    setIsWithdrawalSuccess(true);
   };
 
   const handlePayback = async (circleId: string) => {
