@@ -6,6 +6,7 @@ import {Script} from "forge-std/Script.sol";
 import {QQuestP2PCircle} from "../src/QQuestP2PCircle.sol";
 import {QQuestReputationManagment} from "../src/QQuestReputationManagment.sol";
 import {QQuestP2PCircleMembership} from "../src/QQuestP2PCircleMembership.sol";
+import {LibRLP} from "solady/utils/LibRLP.sol";
 
 contract DeployQQuestCircle is Script {
     QQuestP2PCircle qQuest;

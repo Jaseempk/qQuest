@@ -67,39 +67,39 @@ export const TierSystem = () => {
         >
           <h2 className="text-3xl font-bold mb-4">Reputation Tiers</h2>
           <p className="text-gray-400">
-            Unlock greater benefits as you build trust
+            Unlock greater opportunities as you build credibility.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <TierCard
             icon={Shield}
-            title="Ally"
+            title="Supporter"
             benefits={[
-              "Access to basic circle creation",
-              "Standard circle limits",
-              "Community participation",
+              "Can contribute to projects",
+              "Standard investment limits",
+              "Access to governance discussions",
               "Basic platform features",
             ]}
           />
           <TierCard
             icon={Award}
-            title="Confidant"
+            title="Trusted Contributor"
             benefits={[
-              "Standard circle limits",
-              "Quarterly fee revenue share",
-              "Enhanced platform features",
+              "Higher contribution limits",
+              "Revenue-sharing opportunities",
+              "Priority in exclusive funding rounds",
               "Priority support access",
             ]}
             isHighlighted
           />
           <TierCard
             icon={Crown}
-            title="Guardian"
+            title="Verified Guardian"
             benefits={[
-              "Higher circle value limits",
-              "Maximum quarterly revenue share",
-              "Full platform features",
+              "Highest contribution privileges",
+              "Maximum revenue share benefits",
+              "VIP governance rights",
               "Premium support access",
             ]}
             isHighlighted

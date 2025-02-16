@@ -156,9 +156,11 @@ The contracts emit several events that you can monitor to track user activity, t
 
 ## Contract Addresses:
 
-Circle Contract:0x016d00E2F9178B506f8Fa8E27Eb12b1654B9d78D
+Circle Contract:0x87B9a8CeFC5ff1411C380266Cb13967C30931c02
 
 Membership Contract:0x54CDf5787f7b5B585687Fe83cD1A460fe5b94c7f
+
+Mock USDC Contract:0xC129124eA2Fd4D63C1Fc64059456D8f231eBbed1
 
 ## Conclusion
 
