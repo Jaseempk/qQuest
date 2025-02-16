@@ -142,8 +142,8 @@ export default function Home() {
           className="relative z-10"
         >
           <Image
-            src="/images/qQuest-logo.png"
-            alt="qQuest Logo"
+            src="/images/halalfi.png"
+            alt="halalfi Logo"
             width={100}
             height={100}
             className="mx-auto mb-8"

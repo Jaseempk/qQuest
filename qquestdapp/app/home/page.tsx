@@ -43,7 +43,7 @@ export default function Home() {
     <div className="min-h-screen bg-black text-white pb-16">
       <div className="p-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">qQuest</h1>
+          <h1 className="text-2xl font-bold">halalfi</h1>
           <Bell className="w-6 h-6" />
         </div>
         {fundingRequests.map((request, index) => (

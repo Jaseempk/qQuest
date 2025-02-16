@@ -181,7 +181,7 @@ export default function ProfilePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Activity className="w-5 h-5 text-blue-400" />
-                    <span>qQuest Stats</span>
+                    <span>halalfi Stats</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">

@@ -49,7 +49,7 @@ export default function RewardsPage() {
         className="absolute top-4 left-4 z-20"
       >
         <div className="bg-gradient-to-r from-[#0052ff] to-[#3380ff] text-transparent bg-clip-text text-2xl font-bold">
-          qQuest
+          halalfi
         </div>
       </motion.div>
 
@@ -89,7 +89,7 @@ export default function RewardsPage() {
         transition={{ delay: 1, duration: 1 }}
       >
         <p className="text-sm text-gray-500">
-          © 2024 qQuest. All rights reserved.
+          © 2024 halalfi. All rights reserved.
         </p>
       </motion.div>
     </div>

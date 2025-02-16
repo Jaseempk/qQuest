@@ -407,7 +407,7 @@ export default function Dashboard() {
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-between items-center p-4">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-[#0052ff] to-[#3380ff] bg-clip-text text-transparent">
-              qQuest
+              halalfi
             </h1>
             <button className="relative p-2 rounded-full hover:bg-gray-800/50 transition-colors">
               <Bell className="w-6 h-6 text-gray-400" />
