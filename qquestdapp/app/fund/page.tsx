@@ -11,7 +11,9 @@ import {
   simulateContract,
   getAccount,
 } from "@wagmi/core";
+
 import { abi, circleContractAddress } from "@/abi/CircleAbi";
+import { usdcabi, usdcAddress } from "@/abi/USDCAbi";
 import { config } from "@/ConnectKit/Web3Provider";
 import { useRouter } from "next/navigation";
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
@@ -391,6 +393,21 @@ function FundPage() {
     const fundAmount = parseFloat(amount);
     if (isNaN(fundAmount) || fundAmount <= 0) {
       setError("Please enter a valid funding amount");
+      return;
+    }
+
+    try {
+      const { request } = await simulateContract(config, {
+        abi: usdcabi,
+        address: usdcAddress,
+        functionName: "approve",
+        args: [circleContractAddress, fundAmount],
+      });
+
+      const result = await writeContract(config, request);
+    } catch (err) {
+      console.error("USDC approval failed:", err);
+      setError("Failed to approve USDC transfer. Please try again.");
       return;
     }
 

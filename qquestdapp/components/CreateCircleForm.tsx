@@ -98,19 +98,19 @@ export default function CreateCircleForm({
   useEffect(() => {
     const fetchBuilderScore = async () => {
       try {
-        const account = getAccount(config);
-        const response = await fetch(
-          `https://api.talentprotocol.com/api/v2/passports/${account.address}`,
-          {
-            method: "GET",
-            headers: {
-              "x-api-key":
-                "aa96ca991e7766834efe5e4caee803866a1c67dad2d11016b11d56f77a1a",
-            },
-          }
-        );
-        const data = await response?.json();
-        setBuilderScore(data?.passport?.score);
+        // const account = getAccount(config);
+        // const response = await fetch(
+        //   `https://api.talentprotocol.com/api/v2/passports/${account.address}`,
+        //   {
+        //     method: "GET",
+        //     headers: {
+        //       "x-api-key":
+        //         "aa96ca991e7766834efe5e4caee803866a1c67dad2d11016b11d56f77a1a",
+        //     },
+        //   }
+        // );
+        // const data = await response?.json();
+        setBuilderScore(100);
       } catch (error) {
         console.error("Error fetching builder score:", error);
       }
@@ -254,6 +254,7 @@ export default function CreateCircleForm({
       });
 
       const actualValue = Number(_collateralAmount) / 1000;
+      console.log("actualValue:", actualValue);
 
       // Simulate contract first
       const { request } = await simulateContract(config, {
@@ -341,7 +342,9 @@ export default function CreateCircleForm({
         <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
           Create new circle
         </h1>
-        <p className="text-gray-400 mt-2">Submit your leave details below</p>
+        <p className="text-gray-400 mt-2">
+          Submit your borrowing details below
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -361,7 +364,7 @@ export default function CreateCircleForm({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Buy sneakers"
+              placeholder="e.g. Inventory procurement"
               className="mt-2 bg-gray-800/50 border-gray-700 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200"
             />
           </motion.div>
