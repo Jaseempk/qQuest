@@ -28,7 +28,7 @@ import { client } from "@/lib/apollo/apollo-config";
 interface FundingRequest {
   id: string;
   user: string;
-  avatarurl: string;
+  // avatarurl: string;
   circleId: string;
   title: string;
   description: string;
@@ -70,15 +70,15 @@ const FundingRequestCard = ({
     score: 0,
   });
   const getAvatarContent = () => {
-    if (request?.avatarurl !== "null") {
-      return <AvatarImage src={request?.avatarurl} alt="User Avatar" />;
-    } else {
-      return (
-        <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
-          {request?.userName?.charAt(0) || "?"}
-        </div>
-      );
-    }
+    // if (request?.avatarurl !== "null") {
+    //   return <AvatarImage src={request?.avatarurl} alt="User Avatar" />;
+    // } else {
+    // }
+    return (
+      <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
+        {request?.userName?.charAt(0) || "?"}
+      </div>
+    );
   };
 
   return (
@@ -312,6 +312,8 @@ export default function Dashboard() {
         )
         .order("created_at", { ascending: false });
 
+      console.log("eedataa:", data);
+
       if (error) throw error;
       if (!data) return;
 
@@ -338,6 +340,7 @@ export default function Dashboard() {
             } catch {
               userReputation = 0;
             }
+            console.log("item.user:", item?.user);
             const { data: userData, error } = await supabase
               .from("qQuestUserProfile")
               .select("*")
@@ -351,7 +354,7 @@ export default function Dashboard() {
             const fundingRequest: FundingRequest = {
               id: String(item.id),
               user: String(item.user),
-              avatarurl: String(userData.avatarUrl),
+              // avatarurl: String(userData.avatarUrl),
               circleId: String(item.circleId),
               title: String(item.title),
               description: String(item.description),
@@ -367,6 +370,8 @@ export default function Dashboard() {
             return fundingRequest;
           })
       );
+
+      console.log("request:", requestsWithAdditionalData);
 
       setFundingRequests(requestsWithAdditionalData);
     } catch (err) {

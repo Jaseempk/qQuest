@@ -122,21 +122,21 @@ export default function GetStarted() {
 
       // Upload avatar to Supabase Storage if provided
       let avatarUrl = null;
-      if (avatar) {
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(`${account.address}_avatar.png`, avatar);
+      // if (avatar) {
+      //   const { data: uploadData, error: uploadError } = await supabase.storage
+      //     .from("avatars")
+      //     .upload(`${account.address}_avatar.png`, avatar);
 
-        if (uploadError) {
-          throw uploadError;
-        }
+      //   if (uploadError) {
+      //     throw uploadError;
+      //   }
 
-        avatarUrl = supabase.storage
-          .from("avatars")
-          .getPublicUrl(`${account.address}_avatar.png`).data.publicUrl;
+      //   avatarUrl = supabase.storage
+      //     .from("avatars")
+      //     .getPublicUrl(`${account.address}_avatar.png`).data.publicUrl;
 
-        console.log("avatarUrl:", avatarUrl);
-      }
+      //   console.log("avatarUrl:", avatarUrl);
+      // }
 
       // Insert user data into Supabase
       const { data, error } = await supabase
@@ -145,7 +145,6 @@ export default function GetStarted() {
           {
             userAddy: account.address,
             userName: name,
-            avatarUrl: avatarUrl,
           },
         ])
         .select();
