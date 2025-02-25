@@ -74,9 +74,7 @@ export const HowItWorks = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-          <p className="text-gray-400">
-            Your path to ethical & transparent funding
-          </p>
+          <p className="text-gray-400">Your journey to interest-free lending</p>
         </motion.div>
 
         <motion.div
@@ -88,17 +86,17 @@ export const HowItWorks = () => {
           <div className="flex items-center gap-2 mb-4">
             <Info className="w-5 h-5 text-blue-400" />
             <h3 className="text-lg font-semibold text-white">
-              Project Approval & Fund Release Requirements
+              Circle Creation Requirements
             </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RequirementCard
-              title="Governance Approval"
-              description="Only Shura-approved projects can raise funds, ensuring alignment with ethical standards."
+              title="Builder Score Threshold"
+              description="Maintain a minimum builder score of 50 to create new circles"
             />
             <RequirementCard
-              title="Performance-Based Fund Release"
-              description=" Funds are disbursed in milestones based on project performance, reducing risk."
+              title="Contribution History"
+              description="Or participate in at least 3 successful circles as a contributor"
             />
           </div>
         </motion.div>
@@ -107,44 +105,44 @@ export const HowItWorks = () => {
           <Step
             number={1}
             icon={CircleDollarSign}
-            title="Apply for Funding"
-            description="Submit a project proposal, detailing funding needs, milestones, and potential returns."
+            title="Create a Circle"
+            description="Set your funding goal, circle duration for fundraising, and payback date. Provide a clear title and description of your funding needs."
           />
           <Step
             number={2}
             icon={Lock}
-            title="Community Review & DAO Approval"
-            description="The Shura vets projects and greenlights those with strong viability and ethical alignment."
+            title="Collateralize Assets"
+            description="Lock your crypto assets as collateral. The required amount varies with the loan period - longer terms require higher collateral ratios for added security."
           />
           <Step
             number={3}
             icon={Users}
-            title="Contribute to Projects"
-            description="Investors fund approved projects in exchange for a share of their profits."
+            title="Community Contribution"
+            description="Other users can contribute to your circle during the fundraising period, building a community of mutual support."
           />
           <Step
             number={4}
             icon={Clock}
-            title="Secure Collateral (Optional)"
-            description="Projects can add off-chain or on-chain collateral to increase credibility and attract more investment."
+            title="Access Funds"
+            description="Once the circle duration ends, you can withdraw the accumulated funds to meet your needs."
           />
           <Step
             number={5}
             icon={Shield}
-            title="Milestone-Based Fund Release"
-            description="Funds are unlocked based on achieving predefined milestones, ensuring accountability."
+            title="Timely Repayment"
+            description="Pay back the borrowed amount by the agreed date. Contributors can then redeem their contributions."
           />
           <Step
             number={6}
             icon={Wallet}
-            title="Profit Distribution"
-            description="Once the project generates revenue, contributors receive their agreed share transparently."
+            title="Collateral Release"
+            description="Upon successful repayment, your collateralized assets are automatically released back to your wallet."
           />
           <Step
             number={7}
             icon={Trophy}
-            title="Build Reputation & Unlock More Benefits"
-            description="Projects and investors earn higher credibility tiers based on successful contributions and repayments."
+            title="Build Reputation"
+            description="Successful circle completion and timely repayments increase your reputation score, unlocking greater benefits and higher circle limits."
           />
         </div>
 
@@ -162,20 +160,17 @@ export const HowItWorks = () => {
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-gray-300">Projects without collateral</span>
-              <span className="font-medium text-blue-400">
-                More governance oversight{" "}
-              </span>
+              <span className="text-gray-300">30 days or less</span>
+              <span className="font-medium text-blue-400">150% collateral</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-gray-300">Projects with collateral</span>
-              <span className="font-medium text-blue-400">
-                Faster approval & higher funding limits
-              </span>
+              <span className="text-gray-300">More than 30 days</span>
+              <span className="font-medium text-blue-400">200% collateral</span>
             </div>
           </div>
           <p className="text-sm text-gray-400 mt-4">
-            Providing collateral builds trust and reduces risk for investors.
+            Higher collateral ratios for longer terms help maintain platform
+            stability and protect all participants
           </p>
         </motion.div>
       </div>

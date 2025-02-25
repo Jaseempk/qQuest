@@ -107,17 +107,17 @@ export default function Home() {
       const data = await response.json();
       const builderScore = data.passport.score;
 
-      if (hasBalance === true) {
-        router.push("/dashboard");
+      if (builderScore === 0) {
+        router.push("/zero-score");
+      } else if (builderScore > 0 && builderScore < 19) {
+        router.push("/low-score");
       } else {
-        router.push("/get-started");
+        if (hasBalance === true) {
+          router.push("/dashboard");
+        } else {
+          router.push("/get-started");
+        }
       }
-      // if (builderScore === 0) {
-      //   router.push("/zero-score");
-      // } else if (builderScore > 0 && builderScore < 19) {
-      //   router.push("/low-score");
-      // } else {
-      // }
     } catch (error) {
       console.error("Error fetching builder score:", error);
       router.push("/zero-score");
@@ -142,8 +142,8 @@ export default function Home() {
           className="relative z-10"
         >
           <Image
-            src="/images/halalfi.png"
-            alt="halalfi Logo"
+            src="/images/qQuest-logo.png"
+            alt="qQuest Logo"
             width={100}
             height={100}
             className="mx-auto mb-8"
@@ -157,10 +157,10 @@ export default function Home() {
           className="text-center max-w-3xl mx-auto mb-12"
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            Dornico Sharia Friendly P2P Funding Platform
+            P2P Interest-Free Funding Circles for Crypto
           </h1>
           <p className="text-xl text-gray-400 mb-8">
-            Fund trusted projects, share in their success.
+            Keep your assets, get liquidity.
           </p>
           <div className="space-y-4">
             <CommonButon />
@@ -193,28 +193,27 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold mb-4">Why Choose HalalFi?</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Choose qQuest?</h2>
             <p className="text-gray-400">
-              Experience the ease of reputation-based, Sharia-compliant P2P
-              funding.
+              Experience the ease of reputation based p2p social lending
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
               icon={Shield}
-              title="Profit-Sharing, Not Interest"
-              description=" Support projects and receive a fair share of their profits. No interest, no exploitation."
+              title="Zero Interest"
+              description="Access liquidity without losing your diamond hands. Our community-driven model focuses on mutual benefit."
             />
             <FeatureCard
               icon={Users}
-              title="Community-Governed"
-              description="A DAO (Shura) vets projects and oversees fund releases based on milestones."
+              title="Community Trust"
+              description="Build reputation through active participation. Higher tiers unlock greater benefits."
             />
             <FeatureCard
               icon={Wallet}
-              title="Secure & Transparent"
-              description="Projects can use off-chain and on-chain collateral to increase investor confidence."
+              title="Keep Your Crypto"
+              description="Use your crypto as collateral without selling and raise funds. Maintain your long-term investment strategy."
             />
           </div>
         </div>
@@ -224,7 +223,7 @@ export default function Home() {
 
       <TierSystem />
 
-      {/* <section className="py-20 px-4 bg-gradient-to-b from-gray-900 to-black">
+      <section className="py-20 px-4 bg-gradient-to-b from-gray-900 to-black">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -275,7 +274,7 @@ export default function Home() {
             </p>
           </motion.div>
         </div>
-      </section> */}
+      </section>
 
       <section className="py-20 px-4">
         <motion.div
@@ -286,7 +285,7 @@ export default function Home() {
         >
           <h2 className="text-3xl font-bold mb-6">Ready to Get Started?</h2>
           <p className="text-gray-400 mb-8">
-            Join our ethical funding ecosystem and empower real projects!
+            Join our community fulfill your quick Quests!
           </p>
           <CommonButon />
         </motion.div>
